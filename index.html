@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         body {
             touch-action: none;
@@ -26,26 +27,28 @@
         .element-node.selected {
             transform: scale(1.15);
             z-index: 20;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.9), inset 0 0 8px rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 18px rgba(255, 255, 255, 0.95), inset 0 0 8px rgba(255, 255, 255, 0.7);
         }
 
-        /* Red Blink effect for Hints */
+        /* Smooth Slow Blink effect for Hints */
         @keyframes hintBlink {
             0%, 100% {
-                box-shadow: 0 0 4px #ef4444, inset 0 0 4px #ef4444;
-                border-color: #f87171;
+                box-shadow: 0 0 6px rgba(251, 191, 36, 0.4), inset 0 0 4px rgba(251, 191, 36, 0.3);
+                border-color: #f59e0b;
                 transform: scale(1);
+                opacity: 0.95;
             }
             50% {
-                box-shadow: 0 0 20px #ef4444, inset 0 0 10px #ef4444;
-                border-color: #dc2626;
-                transform: scale(1.12);
+                box-shadow: 0 0 22px rgba(245, 158, 11, 0.95), inset 0 0 10px rgba(251, 191, 36, 0.7);
+                border-color: #fbbf24;
+                transform: scale(1.08);
+                opacity: 1;
                 z-index: 25;
             }
         }
 
         .hint-node {
-            animation: hintBlink 0.6s infinite ease-in-out;
+            animation: hintBlink 1.6s infinite ease-in-out;
             z-index: 25 !important;
         }
 
@@ -60,6 +63,40 @@
         .excellent-banner {
             animation: excellentPop 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             pointer-events: none;
+        }
+
+        /* Noble Gas Bomb Animation */
+        @keyframes bombPulse {
+            0% { transform: translate(-50%, -50%) scale(0.2) rotate(-10deg); opacity: 0; }
+            40% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); opacity: 1; }
+            70% { transform: translate(-50%, -50%) scale(1.0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -70%) scale(1.1); opacity: 0; }
+        }
+
+        .bomb-banner {
+            animation: bombPulse 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            pointer-events: none;
+        }
+
+        /* Bomb Beam Blast Effects */
+        @keyframes laserBlastRow {
+            0% { transform: scaleY(0); opacity: 0.9; }
+            50% { transform: scaleY(1.4); opacity: 1; }
+            100% { transform: scaleY(0); opacity: 0; }
+        }
+
+        @keyframes laserBlastCol {
+            0% { transform: scaleX(0); opacity: 0.9; }
+            50% { transform: scaleX(1.4); opacity: 1; }
+            100% { transform: scaleX(0); opacity: 0; }
+        }
+
+        .bomb-beam-row {
+            animation: laserBlastRow 0.6s ease-out forwards;
+        }
+
+        .bomb-beam-col {
+            animation: laserBlastCol 0.6s ease-out forwards;
         }
 
         .grid-container {
@@ -81,7 +118,7 @@
         }
 
         .glass-panel {
-            background: rgba(15, 23, 42, 0.75);
+            background: rgba(15, 23, 42, 0.78);
             backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
@@ -95,7 +132,6 @@
             animation: popIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* Hint Banner Pop Animation */
         @keyframes hintBannerPop {
             0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
             70% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
@@ -121,7 +157,7 @@
 <body class="h-screen w-screen flex flex-col justify-between overflow-hidden">
 
     <!-- Header / Score Board & Difficulty -->
-    <header class="w-full glass-panel px-4 py-2 flex justify-between items-center z-30 shadow-lg">
+    <header class="w-full glass-panel px-3 py-2 flex justify-between items-center z-30 shadow-lg">
         <div class="flex items-center space-x-2">
             <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-lg shadow-md">
                 <i class="fa-solid fa-atom text-white"></i>
@@ -136,11 +172,17 @@
             </div>
         </div>
 
-        <div class="flex items-center space-x-3">
-            <div class="text-center">
+        <div class="flex items-center space-x-2">
+            <div class="text-center mr-1">
                 <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">SCORE</div>
-                <div id="score-display" class="text-lg font-black text-amber-400 leading-tight">0</div>
+                <div id="score-display" class="text-base font-black text-amber-400 leading-tight">0</div>
             </div>
+            
+            <button id="btn-ranking" class="px-2 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1 transition active:scale-95 border border-amber-500/40">
+                <i class="fa-solid fa-trophy text-amber-400"></i>
+                <span class="hidden sm:inline">順位</span>
+            </button>
+
             <button id="btn-recipes" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 border border-slate-700">
                 <i class="fa-solid fa-book-bookmark text-cyan-400"></i>
                 レシピ
@@ -150,8 +192,9 @@
 
     <!-- Reaction / Molecule Preview Bar -->
     <div class="w-full px-4 py-1.5 flex justify-center items-center gap-3 z-20">
-        <div id="current-selection-container" class="glass-panel px-4 py-1 rounded-full flex items-center min-w-[220px] justify-center gap-2 border border-slate-700 min-h-[40px]">
+        <div id="current-selection-container" class="glass-panel px-4 py-1 rounded-full flex items-center min-w-[220px] justify-center gap-2 border border-slate-700 min-h-[40px] transition-colors duration-300">
             <span id="selection-placeholder" class="text-xs text-slate-400 italic">ドラッグして元素を選択...</span>
+            <span id="hint-display-text" class="text-xs font-bold text-amber-300 hidden flex items-center gap-1.5 animate-pulse"></span>
             <div id="selection-nodes" class="flex items-center gap-1 hidden flex-wrap justify-center"></div>
             <span id="molecule-match-name" class="ml-2 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hidden"></span>
         </div>
@@ -166,10 +209,8 @@
             <!-- Floating Score Popups Container -->
             <div id="popup-container" class="absolute inset-0 pointer-events-none z-40"></div>
 
-            <!-- Excellent Overlay Banner Container -->
+            <!-- Overlay Banners Container -->
             <div id="excellent-container" class="absolute inset-0 pointer-events-none z-50 flex items-center justify-center"></div>
-
-            <!-- Hint Overlay Banner Container -->
             <div id="hint-banner-container" class="absolute inset-0 pointer-events-none z-50 flex items-center justify-center"></div>
 
             <!-- The Grid Board -->
@@ -214,7 +255,7 @@
 
     <!-- Footer info -->
     <footer class="w-full py-1.5 text-center text-[10px] text-slate-500 z-10">
-        元素を繋いで化学反応を起こそう！ | 有機化合物縛りモード & 新レシピ多数搭載！
+        希ガスを3個つなぐと起点の縦横全消去「希ガスボム」発動！ | 全国ランキング対応
     </footer>
 
     <!-- Game Over Modal -->
@@ -226,10 +267,24 @@
             <h2 class="text-xl font-black text-rose-400 mb-1">GAME OVER</h2>
             <p class="text-xs text-slate-400 mb-4">手詰まりになりました（消去可能な分子がなく、シャッフルも不可能です）</p>
 
-            <div class="w-full bg-slate-900/80 rounded-xl p-3 border border-slate-800 mb-5">
+            <div class="w-full bg-slate-900/80 rounded-xl p-3 border border-slate-800 mb-4">
                 <div class="text-[10px] text-slate-400 font-bold">FINAL SCORE</div>
                 <div id="gameover-score" class="text-3xl font-black text-amber-400">0</div>
                 <div class="text-[10px] text-slate-500 mt-1">モード: <span id="gameover-diff" class="text-cyan-400 font-bold">NORMAL</span></div>
+            </div>
+
+            <!-- Player Name Input for Leaderboard -->
+            <div class="w-full mb-4 text-left">
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">
+                    <i class="fa-solid fa-user-pen text-cyan-400"></i> プレイヤー名（ランキング登録）:
+                </label>
+                <div class="flex gap-2">
+                    <input type="text" id="player-name-input" maxlength="12" placeholder="匿名元素マスター" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400" />
+                    <button id="btn-submit-score" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition active:scale-95">
+                        登録
+                    </button>
+                </div>
+                <p id="score-submit-msg" class="text-[10px] text-emerald-400 mt-1 hidden"></p>
             </div>
 
             <button id="btn-restart-gameover" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-bold text-white rounded-xl shadow-lg transition active:scale-95 text-sm flex items-center justify-center gap-2">
@@ -252,6 +307,37 @@
 
             <div class="space-y-2.5" id="diff-options-container">
                 <!-- Generated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="modal-ranking" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="glass-panel w-full max-w-sm rounded-2xl p-5 border border-amber-500/40 max-h-[85vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-700">
+                <h2 class="text-base font-bold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i> スコアランキング
+                </h2>
+                <button id="btn-close-ranking" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Mode selector tabs -->
+            <div class="flex gap-1 overflow-x-auto pb-2 mb-2 custom-scrollbar text-[11px]" id="ranking-tabs">
+                <button data-diff="normal" class="ranking-tab px-2.5 py-1 rounded-lg font-bold bg-amber-500 text-slate-950">NORMAL</button>
+                <button data-diff="easy" class="ranking-tab px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300">EASY</button>
+                <button data-diff="organic" class="ranking-tab px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300">ORGANIC</button>
+                <button data-diff="hard" class="ranking-tab px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300">HARD</button>
+                <button data-diff="expert" class="ranking-tab px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300">EXPERT</button>
+            </div>
+
+            <!-- Leaderboard List -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="ranking-list-container">
+                <div class="text-center py-8 text-xs text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin text-amber-400 text-lg mb-2"></i><br>
+                    スコアデータを読み込み中...
+                </div>
             </div>
         </div>
     </div>
@@ -279,12 +365,139 @@
 
             <div class="mt-3 pt-2 border-t border-slate-800 text-center">
                 <p class="text-[10px] text-slate-400">
-                    <span class="text-pink-400 font-bold">He / Ne</span> は単体3個以上つなげると消去できます。<br>
-                    <span class="text-purple-300 font-bold">ORGANICモード</span> では有機化合物のみ作れます！
+                    <span class="text-pink-400 font-bold">He / Ne</span> を3つ繋ぐと<strong class="text-amber-300">「希ガスボム」</strong>発動！<br>
+                    起点のセルの縦列・横行の全元素を一括破裂させます！
                 </p>
             </div>
         </div>
     </div>
+
+    <!-- Firebase App & Firestore Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration Setup
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'element-combo-default';
+
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                const initAuth = async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (e) {
+                        console.warn("Auth initialization error fallback to anonymous:", e);
+                        try { await signInAnonymously(auth); } catch(err){}
+                    }
+                };
+                initAuth();
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                });
+            }
+        } catch (e) {
+            console.warn("Firebase not configured or initialization failed:", e);
+        }
+
+        // Leaderboard Firebase API
+        window.saveLeaderboardScore = async function(playerName, scoreValue, diffKey) {
+            if (!db || !auth) {
+                // Fallback to localStorage if Firebase not initialized
+                saveLocalScore(playerName, scoreValue, diffKey);
+                return true;
+            }
+
+            try {
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+
+                // Strict Path Rule: /artifacts/{appId}/public/data/{collectionName}
+                const rankingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                await addDoc(rankingsRef, {
+                    name: playerName || '匿名元素マスター',
+                    score: Number(scoreValue),
+                    diff: diffKey,
+                    timestamp: Date.now(),
+                    userId: auth.currentUser ? auth.currentUser.uid : 'anon'
+                });
+                return true;
+            } catch (err) {
+                console.error("Firestore save error, fallback to local:", err);
+                saveLocalScore(playerName, scoreValue, diffKey);
+                return true;
+            }
+        };
+
+        window.fetchLeaderboard = async function(diffKey) {
+            if (!db) {
+                return getLocalScores(diffKey);
+            }
+
+            try {
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+
+                // Rule 2: Simple query without orderBy/where compound queries, sort in JS
+                const rankingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                const snapshot = await getDocs(rankingsRef);
+                
+                let list = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data && data.diff === diffKey) {
+                        list.push(data);
+                    }
+                });
+
+                // Combine with local offline scores if any
+                const localList = getLocalScores(diffKey);
+                list = list.concat(localList);
+
+                // Sort descending in memory
+                list.sort((a, b) => b.score - a.score);
+                return list.slice(0, 15);
+            } catch (err) {
+                console.error("Firestore fetch error, fallback to local:", err);
+                return getLocalScores(diffKey);
+            }
+        };
+
+        function saveLocalScore(name, score, diff) {
+            try {
+                const key = `element_combo_scores_${diff}`;
+                const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                existing.push({ name: name || '匿名元素マスター', score: Number(score), timestamp: Date.now() });
+                existing.sort((a,b) => b.score - a.score);
+                localStorage.setItem(key, JSON.stringify(existing.slice(0, 20)));
+            } catch(e){}
+        }
+
+        function getLocalScores(diff) {
+            try {
+                const key = `element_combo_scores_${diff}`;
+                return JSON.parse(localStorage.getItem(key) || '[]');
+            } catch(e) {
+                return [];
+            }
+        }
+    </script>
 
     <!-- Game Script -->
     <script>
@@ -317,7 +530,11 @@
             Cl: { symbol: 'Cl', name: '塩素', color: 'from-lime-500 to-green-600', textColor: 'text-white', borderColor: 'border-lime-300' },
             Cu: { symbol: 'Cu', name: '銅', color: 'from-orange-600 to-amber-700', textColor: 'text-white', borderColor: 'border-orange-400' },
             Hg: { symbol: 'Hg', name: '水銀', color: 'from-slate-300 to-slate-400', textColor: 'text-slate-900', borderColor: 'border-white' },
-            He: { symbol: 'He', name: 'ヘリウム', color: 'from-pink-400 to-rose-400', textColor: 'text-slate-950', borderColor: 'border-pink-200' },
+            
+            // Noble Gases (Rare Specials for Bomb Trigger)
+            He: { symbol: 'He', name: 'ヘリウム', color: 'from-pink-500 to-rose-500', textColor: 'text-white', borderColor: 'border-pink-300', isNoble: true },
+            Ne: { symbol: 'Ne', name: 'ネオン', color: 'from-fuchsia-500 to-purple-600', textColor: 'text-white', borderColor: 'border-fuchsia-300', isNoble: true },
+            
             COOH: { symbol: 'COOH', name: 'カルボン基', color: 'from-purple-600 to-violet-700', textColor: 'text-white', borderColor: 'border-purple-300' },
             Ph: { symbol: 'Ph', name: 'ベンゼン環', color: 'from-amber-400 to-yellow-500', textColor: 'text-slate-950', borderColor: 'border-amber-200', isBenzene: true },
             Mn: { symbol: 'Mn', name: 'マンガン', color: 'from-purple-900 to-indigo-950', textColor: 'text-purple-200', borderColor: 'border-purple-400' },
@@ -325,7 +542,6 @@
             Ag: { symbol: 'Ag', name: '銀', color: 'from-slate-200 to-zinc-400', textColor: 'text-slate-900', borderColor: 'border-cyan-100' },
             Li: { symbol: 'Li', name: 'リチウム', color: 'from-rose-500 to-pink-600', textColor: 'text-white', borderColor: 'border-pink-300' },
             B:  { symbol: 'B',  name: 'ホウ素', color: 'from-stone-600 to-amber-900', textColor: 'text-amber-100', borderColor: 'border-amber-600' },
-            Ne: { symbol: 'Ne', name: 'ネオン', color: 'from-orange-500 to-red-500', textColor: 'text-white', borderColor: 'border-orange-300' },
             Zn: { symbol: 'Zn', name: '亜鉛', color: 'from-teal-600 to-slate-700', textColor: 'text-white', borderColor: 'border-teal-300' },
             Au: { symbol: 'Au', name: '金', color: 'from-yellow-300 to-amber-500', textColor: 'text-slate-900', borderColor: 'border-yellow-100' },
             P:  { symbol: 'P',  name: 'リン', color: 'from-orange-700 to-red-900', textColor: 'text-orange-200', borderColor: 'border-orange-500' },
@@ -335,28 +551,29 @@
         };
 
         // --- Difficulties / Modes Definition ---
+        // Noble gas weights adjusted to be rare (0.2 - 0.35)
         const DIFFICULTIES = {
             easy: {
                 id: 'easy',
                 name: 'EASY',
                 badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-                desc: '基本の6種類。初心者でもサクサク繋がります。',
+                desc: '基本元素。希ガスは稀に出現する希ガスボム用！',
                 elements: ['H', 'O', 'C', 'N', 'He', 'COOH'],
-                weights: { H: 6, O: 4, C: 3, N: 2, He: 1, COOH: 1 }
+                weights: { H: 6, O: 4, C: 3, N: 2, He: 0.35, COOH: 1 }
             },
             normal: {
                 id: 'normal',
                 name: 'NORMAL',
                 badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
-                desc: '標準の12種類。ベンゼン環（Ph）も登場！',
+                desc: '標準12種類。ベンゼン環（Ph）や希ガスボムも完備！',
                 elements: ['H', 'O', 'C', 'N', 'F', 'S', 'Cl', 'Cu', 'Hg', 'He', 'COOH', 'Ph'],
-                weights: { H: 6, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 1, COOH: 1, Ph: 1.2 }
+                weights: { H: 6, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.3, COOH: 1, Ph: 1.2 }
             },
             organic: {
                 id: 'organic',
                 name: 'ORGANIC (有機縛り)',
                 badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-                desc: '【上級】有機化合物のみ合成可能！無機物は消せません。',
+                desc: '【上級】有機化合物のみ合成可能！無機物・ボム不可。',
                 elements: ['H', 'C', 'O', 'N', 'Cl', 'F', 'COOH', 'Ph'],
                 isOrganicOnly: true,
                 weights: { H: 6, C: 5, O: 4, N: 3, Cl: 2, F: 1.5, COOH: 2, Ph: 2 }
@@ -365,21 +582,21 @@
                 id: 'hard',
                 name: 'HARD',
                 badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-                desc: '19種類登場。ケイ素・アルミ・マグネシウム等も追加！',
+                desc: '19種類登場。ケイ素・アルミ・Neボム等も追加！',
                 elements: ['H', 'O', 'C', 'N', 'F', 'S', 'Cl', 'Cu', 'Hg', 'He', 'COOH', 'Ph', 'Ca', 'Ag', 'Li', 'Zn', 'Ne', 'Si', 'Al', 'Mg'],
-                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 1, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 1, Si: 1.2, Al: 1.2, Mg: 1.2 }
+                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.25, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 0.25, Si: 1.2, Al: 1.2, Mg: 1.2 }
             },
             expert: {
                 id: 'expert',
                 name: 'EXPERT',
                 badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-                desc: '全24種類が勢揃い！高い化学知識と機転が必要。',
+                desc: '全24種類が勢揃い！激レア希ガスボムを狙え。',
                 elements: Object.keys(ALL_ELEMENTS),
-                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 1, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 1, Mn: 1, B: 1, Au: 0.8, P: 1, Si: 1, Al: 1, Mg: 1 }
+                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.25, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 0.25, Mn: 1, B: 1, Au: 0.8, P: 1, Si: 1, Al: 1, Mg: 1 }
             }
         };
 
-        // --- All Molecule Recipes (With Organic Tag) ---
+        // --- All Molecule Recipes ---
         const ALL_RECIPES = [
             // Simple Elemental Molecules
             { name: '水素分子', formula: 'H₂', composition: { H: 2 }, score: 80, desc: '宇宙で最も豊富な二原子分子', isOrganic: false },
@@ -406,10 +623,8 @@
             { name: '安息香酸(分解連鎖)', formula: 'C₆H₅COOH', composition: { Ph: 1, C: 1, O: 2, H: 1 }, score: 500, desc: 'Ph + C + O + O + H による合成', isOrganic: true },
             { name: 'トルエン', formula: 'C₆H₅CH₃', composition: { Ph: 1, C: 1, H: 3 }, score: 450, desc: 'シンナー等の有機溶剤成分', isOrganic: true },
             { name: 'ニトロベンゼン', formula: 'C₆H₅NO₂', composition: { Ph: 1, N: 1, O: 2 }, score: 520, desc: 'アーモンド臭を持つ黄色油状液体', isOrganic: true },
-            { name: '安息香酸メチル', formula: 'C₆H₅COOCH₃', composition: { Ph: 1, C: 2, O: 2, H: 3 }, score: 650, desc: '甘い果実臭を持つエステル', isOrganic: true },
 
             { name: 'パラジクロロベンゼン', formula: 'C₆H₄Cl₂', composition: { Ph: 1, Cl: 2 }, score: 420, desc: '防虫剤や芳香剤に使われる有機塩素化合物', isOrganic: true },
-            { name: 'トリニトロトルエン', formula: 'C₇H₅N₃O₆', composition: { Ph: 1, C: 1, N: 3, O: 6, H: 2 }, score: 750, desc: 'TNT爆薬として有名なニトロ化合物', isOrganic: true },
             { name: 'サリチル酸', formula: 'C₇H₆O₃', composition: { Ph: 1, COOH: 1, O: 1, H: 1 }, score: 550, desc: '消炎鎮痛剤や角質軟化薬の原料', isOrganic: true },
             { name: 'アセチルサリチル酸', formula: 'C₉H₈O₄', composition: { Ph: 1, COOH: 1, C: 1, O: 1, H: 3 }, score: 680, desc: 'アスピリンとして有名な世界初の合成解熱鎮痛薬', isOrganic: true },
 
@@ -424,31 +639,19 @@
             { name: '硫化水素', formula: 'H₂S', composition: { H: 2, S: 1 }, score: 200, desc: '温泉特有の硫黄臭の気体', isOrganic: false },
             { name: '二酸化硫黄', formula: 'SO₂', composition: { S: 1, O: 2 }, score: 220, desc: '刺激臭のある火山ガス成分', isOrganic: false },
             { name: '酸化銅', formula: 'CuO', composition: { Cu: 1, O: 1 }, score: 180, desc: '黒色の金属酸化物', isOrganic: false },
-            { name: '酸化水銀', formula: 'HgO', composition: { Hg: 1, O: 1 }, score: 220, desc: '赤色・黄色の結晶粉末', isOrganic: false },
-            { name: '塩化銅', formula: 'CuCl₂', composition: { Cu: 1, Cl: 2 }, score: 300, desc: '青緑色の塩類', isOrganic: false },
 
-            // Si, Al, Mg & Other Metallic Recipes
+            // Inorganic Metallic / Minerals
             { name: '二酸化ケイ素', formula: 'SiO₂', composition: { Si: 1, O: 2 }, score: 220, desc: '石英や水晶、ガラスの主成分', isOrganic: false },
-            { name: '四フッ化ケイ素', formula: 'SiF₄', composition: { Si: 1, F: 4 }, score: 350, desc: '無色の有毒気体', isOrganic: false },
             { name: '酸化アルミニウム', formula: 'Al₂O₃', composition: { Al: 2, O: 3 }, score: 380, desc: 'アルミナ。ルビーやサファイアの主成分', isOrganic: false },
-            { name: '塩化アルミニウム', formula: 'AlCl₃', composition: { Al: 1, Cl: 3 }, score: 320, desc: 'ルイス酸触媒として多用される', isOrganic: false },
             { name: '酸化マグネシウム', formula: 'MgO', composition: { Mg: 1, O: 1 }, score: 160, desc: '耐火レンガや胃腸薬に使われる', isOrganic: false },
-            { name: '塩化マグネシウム', formula: 'MgCl₂', composition: { Mg: 1, Cl: 2 }, score: 280, desc: '豆腐の凝固剤（にがり）の主成分', isOrganic: false },
-
             { name: '生石灰(酸化カルシウム)', formula: 'CaO', composition: { Ca: 1, O: 1 }, score: 160, desc: '乾燥剤として使われる白色固形物', isOrganic: false },
-            { name: '塩化カルシウム', formula: 'CaCl₂', composition: { Ca: 1, Cl: 2 }, score: 280, desc: '融雪剤や除湿剤に利用される', isOrganic: false },
             { name: '塩化銀', formula: 'AgCl', composition: { Ag: 1, Cl: 1 }, score: 180, desc: '感光性を持つ白色沈殿', isOrganic: false },
-            { name: '酸化銀', formula: 'Ag₂O', composition: { Ag: 2, O: 1 }, score: 260, desc: '暗褐色の粉末', isOrganic: false },
             { name: '塩化リチウム', formula: 'LiCl', composition: { Li: 1, Cl: 1 }, score: 160, desc: '炎色反応で美しい赤色を示す', isOrganic: false },
             { name: '酸化亜鉛', formula: 'ZnO', composition: { Zn: 1, O: 1 }, score: 180, desc: '日焼け止めなどに使われる白色顔料', isOrganic: false },
-            { name: '二酸化マンガン', formula: 'MnO₂', composition: { Mn: 1, O: 2 }, score: 260, desc: '乾電池の正極材料や触媒', isOrganic: false },
-            { name: '三フッ化ホウ素', formula: 'BF₃', composition: { B: 1, F: 3 }, score: 350, desc: 'ルイス酸触媒として有名', isOrganic: false },
-            { name: 'ホウ酸', formula: 'H₃BO₃', composition: { B: 1, H: 3, O: 3 }, score: 550, desc: '目薬やゴキブリ退治に使われる', isOrganic: false },
-            { name: 'リン酸', formula: 'H₃PO₄', composition: { P: 1, H: 3, O: 4 }, score: 650, desc: '肥料や清涼飲料水に使われる', isOrganic: false },
 
-            // Noble Gas Specials
-            { name: 'ヘリウム塊', formula: 'He (×3+)', composition: { He: 3 }, isNobleGasSpecial: true, score: 250, desc: '不活性ガス。3つ以上繋げて破裂！', isOrganic: false },
-            { name: 'ネオン塊', formula: 'Ne (×3+)', composition: { Ne: 3 }, isNobleGasSpecial: true, score: 300, desc: 'ネオンサイン。3つ以上で鮮やかに発光消去！', isOrganic: false }
+            // Noble Gas Bomb Recipes
+            { name: '希ガスボム(He)', formula: 'He BOMB', composition: { He: 3 }, isNobleGasSpecial: true, score: 600, desc: '起点の縦列・横行すべての元素を一括全消去！', isOrganic: false },
+            { name: '希ガスボム(Ne)', formula: 'Ne BOMB', composition: { Ne: 3 }, isNobleGasSpecial: true, score: 700, desc: '起点の縦列・横行すべての元素を一括全消去！', isOrganic: false }
         ];
 
         // --- Sound Controller ---
@@ -489,6 +692,15 @@
                 [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, i) => {
                     setTimeout(() => this.playTone(f, 0.22, 'square'), i * 75);
                 });
+            }
+            playBombSound() {
+                this.init();
+                if (!this.ctx) return;
+                // Heavy explosion sound sequence
+                [180, 120, 90, 60, 40].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.3, 'sawtooth'), i * 50);
+                });
+                setTimeout(() => this.playTone(1200, 0.2, 'triangle'), 100);
             }
             playRotateSound() {
                 this.init();
@@ -548,6 +760,9 @@
         const btnHint = document.getElementById('btn-hint');
         const hintBtnText = document.getElementById('hint-btn-text');
         const modalGameOver = document.getElementById('modal-gameover');
+        const modalRanking = document.getElementById('modal-ranking');
+        const btnSubmitScore = document.getElementById('btn-submit-score');
+        const scoreSubmitMsg = document.getElementById('score-submit-msg');
 
         // --- Initial Operations ---
         function setDifficulty(diffKey) {
@@ -559,7 +774,7 @@
 
             elementWeightedPool = [];
             Object.entries(diffConfig.weights).forEach(([symbol, weight]) => {
-                const count = Math.round(weight * 4);
+                const count = Math.max(1, Math.round(weight * 10));
                 for (let i = 0; i < count; i++) {
                     elementWeightedPool.push(symbol);
                 }
@@ -575,8 +790,12 @@
             hasShuffled = false;
             updateShuffleButtonState();
             resetHintCooldown();
+            clearHintDisplay();
             closeModal(modalGameOver);
-            
+            scoreSubmitMsg.classList.add('hidden');
+            btnSubmitScore.disabled = false;
+            btnSubmitScore.classList.remove('opacity-50');
+
             grid = [];
             for (let r = 0; r < GRID_SIZE; r++) {
                 grid[r] = [];
@@ -586,7 +805,6 @@
             }
             renderBoard();
 
-            // Check if initial board has valid moves
             setTimeout(checkGameOverCondition, 300);
         }
 
@@ -637,19 +855,16 @@
             hintBtnText.textContent = 'ヒント';
         }
 
-        // Convert chemical formula to mosaicked format with '?'
         function getMosaickedFormula(formula) {
             let chars = formula.split('');
             let candidates = [];
             for (let i = 0; i < chars.length; i++) {
-                // Target alphanumeric characters and subscripts for masking
                 if (/[A-Za-z0-9₁₂₃₄₅₆₇₈₉₀]/.test(chars[i])) {
                     candidates.push(i);
                 }
             }
             if (candidates.length === 0) return formula;
             
-            // Mask about 40-50% of the formula characters (at least 1)
             let maskCount = Math.max(1, Math.floor(candidates.length * 0.45));
             let shuffled = [...candidates].sort(() => 0.5 - Math.random());
             
@@ -659,11 +874,10 @@
             return chars.join('');
         }
 
-        // Format chemical reaction / creation formula
         function getReactionFormula(recipe) {
             if (recipe.isNobleGasSpecial) {
                 const sym = recipe.formula.includes('He') ? 'He' : 'Ne';
-                return `3 ${sym} ➔ ${recipe.name}`;
+                return `3 ${sym} ➔ 💥【希ガスボム発動】`;
             }
             const compParts = Object.entries(recipe.composition).map(([sym, count]) => {
                 const displaySym = sym === 'Ph' ? 'Ph' : sym;
@@ -672,54 +886,49 @@
             return `${compParts.join(' + ')} ➔ ${recipe.formula}`;
         }
 
-        // Display stylized Hint Banner Overlay
         function showHintBanner(recipe) {
             if (!hintBannerContainer) return;
             hintBannerContainer.innerHTML = '';
 
-            const isMosaicPattern = Math.random() < 0.5;
-            const banner = document.createElement('div');
-            
-            if (isMosaicPattern) {
-                const mosaicked = getMosaickedFormula(recipe.formula);
-                banner.className = 'hint-banner-anim absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-[280px] p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/90 via-slate-900/95 to-amber-950/90 border-2 border-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.5)] backdrop-blur-md flex flex-col items-center justify-center text-center z-50 pointer-events-none';
-                banner.innerHTML = `
-                    <div class="flex items-center gap-1.5 text-amber-400 text-xs font-bold tracking-wider mb-1">
-                        <i class="fa-solid fa-user-secret text-amber-300"></i>
-                        <span>ヒント：伏字化学式</span>
-                    </div>
-                    <div class="text-2xl font-black text-amber-200 tracking-widest font-mono drop-shadow my-0.5">
-                        ${mosaicked}
-                    </div>
-                    <div class="text-[10px] text-slate-300 font-medium mt-0.5">
-                        隠された化合物の組み合わせを探そう！
-                    </div>
-                `;
-            } else {
-                const reactionStr = getReactionFormula(recipe);
-                banner.className = 'hint-banner-anim absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-[280px] p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/90 via-slate-900/95 to-cyan-950/90 border-2 border-cyan-400/80 shadow-[0_0_25px_rgba(34,211,238,0.5)] backdrop-blur-md flex flex-col items-center justify-center text-center z-50 pointer-events-none';
-                banner.innerHTML = `
-                    <div class="flex items-center gap-1.5 text-cyan-400 text-xs font-bold tracking-wider mb-1">
-                        <i class="fa-solid fa-vial-circle-check text-cyan-300"></i>
-                        <span>ヒント：合成反応式</span>
-                    </div>
-                    <div class="text-base font-extrabold text-cyan-200 font-mono drop-shadow my-0.5">
-                        ${reactionStr}
-                    </div>
-                    <div class="text-[10px] text-slate-300 font-medium mt-0.5">
-                        <strong class="text-emerald-300">${recipe.name}</strong> を作れるラインを繋ごう！
-                    </div>
-                `;
+        function showHintInSelectionBar(recipe) {
+            const hintTextEl = document.getElementById('hint-display-text');
+            const placeholderEl = document.getElementById('selection-placeholder');
+            const selectionContainer = document.getElementById('current-selection-container');
+            if (!hintTextEl) return;
+
+            if (selectedPath.length === 0) {
+                placeholderEl.classList.add('hidden');
+                
+                let hintMsg = '';
+                if (recipe.isNobleGasSpecial) {
+                    const sym = recipe.formula.includes('He') ? 'He' : 'Ne';
+                    hintMsg = `<i class="fa-solid fa-lightbulb text-amber-300"></i> <span class="text-amber-300 font-bold">希ガスボム (${sym}×3)</span>`;
+                } else {
+                    hintMsg = `<i class="fa-solid fa-lightbulb text-amber-300"></i> <span class="text-amber-200 font-semibold">${recipe.name}</span> <span class="text-cyan-300 font-mono text-[11px]">(${recipe.formula})</span>`;
+                }
+                
+                hintTextEl.innerHTML = hintMsg;
+                hintTextEl.classList.remove('hidden');
+                selectionContainer.classList.add('border-amber-500/60', 'bg-amber-500/10');
             }
+        }
 
-            hintBannerContainer.appendChild(banner);
-
-            setTimeout(() => {
-                banner.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
-                banner.style.opacity = '0';
-                banner.style.transform = 'translate(-50%, -65%) scale(0.9)';
-                setTimeout(() => banner.remove(), 400);
-            }, 2600);
+        function clearHintDisplay() {
+            const hintTextEl = document.getElementById('hint-display-text');
+            const placeholderEl = document.getElementById('selection-placeholder');
+            const selectionContainer = document.getElementById('current-selection-container');
+            
+            if (hintTextEl) {
+                hintTextEl.classList.add('hidden');
+                hintTextEl.innerHTML = '';
+            }
+            if (placeholderEl && selectedPath.length === 0) {
+                placeholderEl.classList.remove('hidden');
+            }
+            if (selectionContainer) {
+                selectionContainer.classList.remove('border-amber-500/60', 'bg-amber-500/10');
+            }
+            document.querySelectorAll('.hint-node').forEach(n => n.classList.remove('hint-node'));
         }
 
         function triggerHint() {
@@ -729,8 +938,9 @@
 
             if (validMatch) {
                 sound.playHintSound();
+                clearHintDisplay();
                 
-                // Highlight grid nodes
+                // Slow pulse on grid elements
                 validMatch.path.forEach(cell => {
                     const selector = `.element-node[data-row="${cell.r}"][data-col="${cell.c}"]`;
                     const node = boardEl.querySelector(selector);
@@ -739,12 +949,13 @@
                     }
                 });
 
-                // Display new Hint Banner (Mosaic or Reaction Formula)
-                showHintBanner(validMatch.recipe);
+                // Display inside selection bar
+                showHintInSelectionBar(validMatch.recipe);
 
+                // Auto clear hint after 4.5s
                 setTimeout(() => {
-                    document.querySelectorAll('.hint-node').forEach(n => n.classList.remove('hint-node'));
-                }, 3200);
+                    clearHintDisplay();
+                }, 4500);
 
             } else {
                 alert('現在消せる組み合わせが見つかりません！回転またはシャッフルを試してください。');
@@ -846,7 +1057,7 @@
             function dfsSearch(curr, path, symbols) {
                 stepCount++;
                 if (stepCount >= MAX_STEPS) return;
-                if (path.length > 18) return; // レシピの最大長に合わせた実用的な深さ制限
+                if (path.length > 18) return;
 
                 const result = checkMatchedRecipe(symbols);
                 if (result) {
@@ -895,6 +1106,11 @@
                             ${BENZENE_HEX_SVG}
                             <span class="text-[9px] opacity-90 font-bold leading-none">${elData.name}</span>
                         `;
+                    } else if (elData.isNoble) {
+                        node.innerHTML = `
+                            <span class="text-sm leading-none tracking-tight font-black flex items-center gap-0.5">${symbol} <i class="fa-solid fa-burst text-[10px] text-amber-300"></i></span>
+                            <span class="text-[8px] opacity-90 font-bold leading-none mt-0.5">${elData.name}</span>
+                        `;
                     } else {
                         const symbolSize = symbol.length > 3 ? 'text-[10px]' : (symbol.length > 2 ? 'text-xs' : (symbol.length > 1 ? 'text-sm' : 'text-lg'));
                         node.innerHTML = `
@@ -929,7 +1145,7 @@
         function handlePointerDown(e) {
             if (isGameOver) return;
             sound.init();
-            document.querySelectorAll('.hint-node').forEach(n => n.classList.remove('hint-node'));
+            clearHintDisplay();
 
             isDragging = true;
             const cell = getCellFromCoordinates(e.clientX, e.clientY);
@@ -990,13 +1206,13 @@
             const modeConfig = DIFFICULTIES[currentDifficultyKey];
             const isOrganicOnlyMode = modeConfig.isOrganicOnly;
 
-            // Special Noble Gas (He, Ne) -> Invalid in ORGANIC mode
+            // Noble Gas Bomb (He, Ne) -> 3 or more of same noble gas
             if (pathSymbols.length >= 3) {
                 if (!isOrganicOnlyMode && pathSymbols.every(s => s === 'He')) {
-                    return { recipe: ALL_RECIPES.find(r => r.formula.includes('He')), count: pathSymbols.length };
+                    return { recipe: ALL_RECIPES.find(r => r.formula.includes('He BOMB')), count: pathSymbols.length, isBomb: true };
                 }
                 if (!isOrganicOnlyMode && pathSymbols.every(s => s === 'Ne')) {
-                    return { recipe: ALL_RECIPES.find(r => r.formula.includes('Ne')), count: pathSymbols.length };
+                    return { recipe: ALL_RECIPES.find(r => r.formula.includes('Ne BOMB')), count: pathSymbols.length, isBomb: true };
                 }
             }
 
@@ -1004,8 +1220,6 @@
 
             for (let recipe of ALL_RECIPES) {
                 if (recipe.isNobleGasSpecial) continue;
-
-                // Organic Only mode constraint
                 if (isOrganicOnlyMode && !recipe.isOrganic) continue;
                 
                 const comp = recipe.composition;
@@ -1046,11 +1260,18 @@
             const pathSymbols = selectedPath.map(p => grid[p.r][p.c]);
             
             if (pathSymbols.length === 0) {
-                selectionPlaceholder.classList.remove('hidden');
+                const hintTextEl = document.getElementById('hint-display-text');
+                if (!hintTextEl || hintTextEl.classList.contains('hidden')) {
+                    selectionPlaceholder.classList.remove('hidden');
+                }
                 selectionNodesEl.classList.add('hidden');
                 moleculeMatchName.classList.add('hidden');
                 return;
             }
+
+            // Hide hint text when user starts selecting elements
+            const hintTextEl = document.getElementById('hint-display-text');
+            if (hintTextEl) hintTextEl.classList.add('hidden');
 
             selectionPlaceholder.classList.add('hidden');
             selectionNodesEl.classList.remove('hidden');
@@ -1080,7 +1301,9 @@
             const result = checkMatchedRecipe(pathSymbols);
             if (result) {
                 matchedRecipe = result;
-                moleculeMatchName.textContent = `+${result.recipe.score} ${result.recipe.name} (${result.recipe.formula})`;
+                moleculeMatchName.textContent = result.isBomb ? 
+                    `💥 +${result.recipe.score} ${result.recipe.name}` : 
+                    `+${result.recipe.score} ${result.recipe.name} (${result.recipe.formula})`;
                 moleculeMatchName.classList.remove('hidden');
             } else {
                 matchedRecipe = null;
@@ -1109,40 +1332,93 @@
             const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
             polyline.setAttribute('points', points.join(' '));
             polyline.setAttribute('fill', 'none');
-            polyline.setAttribute('stroke', matchedRecipe ? '#34d399' : '#38bdf8');
+            polyline.setAttribute('stroke', matchedRecipe?.isBomb ? '#f43f5e' : (matchedRecipe ? '#34d399' : '#38bdf8'));
             polyline.setAttribute('stroke-width', '5');
             polyline.setAttribute('stroke-linecap', 'round');
             polyline.setAttribute('stroke-linejoin', 'round');
-            polyline.setAttribute('opacity', '0.8');
+            polyline.setAttribute('opacity', '0.85');
             svgEl.appendChild(polyline);
         }
 
-        // --- Execution & Gravity ---
+        // --- Execution & Gravity & Noble Gas Bomb ---
         function executeMatch(matchResult) {
-            const { recipe } = matchResult;
+            const { recipe, isBomb } = matchResult;
 
             let matchScore = recipe.score;
-            if (recipe.isNobleGasSpecial && selectedPath.length > 3) {
-                matchScore += (selectedPath.length - 3) * 100;
-            }
+            if (isBomb) {
+                // Noble Gas Bomb Execution
+                sound.playBombSound();
+                showBombBanner(recipe.formula.includes('He') ? 'He' : 'Ne');
 
-            if (matchScore >= EXCELLENT_SCORE_THRESHOLD) {
-                sound.playExcellentSound();
-                showExcellentBanner();
+                const originCell = selectedPath[0]; // 起点セル
+                triggerBombLaserEffect(originCell);
+
+                // Collect all cells to remove: entire row + entire column + connected path
+                const toRemove = new Set();
+                for (let c = 0; c < GRID_SIZE; c++) toRemove.add(`${originCell.r},${c}`);
+                for (let r = 0; r < GRID_SIZE; r++) toRemove.add(`${r},${originCell.c}`);
+                selectedPath.forEach(p => toRemove.add(`${p.r},${p.c}`));
+
+                matchScore += (toRemove.size - 3) * 30; // Bonus score for cleared cells
+                updateScore(score + matchScore);
+
+                showScorePopup(originCell, `💥 希ガスボム +${matchScore}`);
+
+                toRemove.forEach(coord => {
+                    const [r, c] = coord.split(',').map(Number);
+                    grid[r][c] = null;
+                });
+
             } else {
-                sound.playMatchSound();
+                if (matchScore >= EXCELLENT_SCORE_THRESHOLD) {
+                    sound.playExcellentSound();
+                    showExcellentBanner();
+                } else {
+                    sound.playMatchSound();
+                }
+
+                updateScore(score + matchScore);
+
+                const lastCell = selectedPath[selectedPath.length - 1];
+                showScorePopup(lastCell, `+${matchScore} ${recipe.name}`);
+
+                selectedPath.forEach(p => {
+                    grid[p.r][p.c] = null;
+                });
             }
-
-            updateScore(score + matchScore);
-
-            const lastCell = selectedPath[selectedPath.length - 1];
-            showScorePopup(lastCell, `+${matchScore} ${recipe.name}`);
-
-            selectedPath.forEach(p => {
-                grid[p.r][p.c] = null;
-            });
 
             applyGravityAndRefill();
+        }
+
+        function triggerBombLaserEffect(cell) {
+            const rowSelector = `.element-node[data-row="${cell.r}"]`;
+            const colSelector = `.element-node[data-col="${cell.c}"]`;
+
+            document.querySelectorAll(rowSelector).forEach(node => {
+                node.style.boxShadow = '0 0 25px #f43f5e, inset 0 0 15px #f43f5e';
+                node.style.borderColor = '#fb7185';
+            });
+
+            document.querySelectorAll(colSelector).forEach(node => {
+                node.style.boxShadow = '0 0 25px #f43f5e, inset 0 0 15px #f43f5e';
+                node.style.borderColor = '#fb7185';
+            });
+        }
+
+        function showBombBanner(sym) {
+            excellentContainer.innerHTML = '';
+
+            const banner = document.createElement('div');
+            banner.className = 'bomb-banner absolute top-1/2 left-1/2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-rose-600 via-pink-500 to-rose-600 text-white font-black text-2xl tracking-wider shadow-[0_0_35px_rgba(244,63,94,0.8)] border-2 border-white flex items-center gap-2 z-50';
+            banner.innerHTML = `
+                <i class="fa-solid fa-burst text-amber-300"></i>
+                <span>希ガスボム (${sym}) 発動！</span>
+                <i class="fa-solid fa-burst text-amber-300"></i>
+            `;
+
+            excellentContainer.appendChild(banner);
+
+            setTimeout(() => banner.remove(), 1400);
         }
 
         function showExcellentBanner() {
@@ -1175,7 +1451,7 @@
             const boardRect = boardEl.getBoundingClientRect();
 
             const popup = document.createElement('div');
-            popup.className = 'absolute font-black text-xs text-emerald-300 bg-slate-900/90 border border-emerald-400 px-2.5 py-1 rounded-full shadow-lg pointer-events-none z-50 transition-all duration-700 transform -translate-x-1/2 -translate-y-1/2';
+            popup.className = 'absolute font-black text-xs text-emerald-300 bg-slate-900/95 border border-emerald-400 px-2.5 py-1 rounded-full shadow-lg pointer-events-none z-50 transition-all duration-700 transform -translate-x-1/2 -translate-y-1/2';
             popup.style.left = `${rect.left + rect.width / 2 - boardRect.left}px`;
             popup.style.top = `${rect.top + rect.height / 2 - boardRect.top}px`;
             popup.textContent = text;
@@ -1240,6 +1516,87 @@
             }, 300);
         }
 
+        // --- Leaderboard Modal Controller ---
+        let selectedRankingDiff = 'normal';
+
+        async function renderRankingList(diffKey) {
+            selectedRankingDiff = diffKey;
+            
+            // Update Tab styles
+            document.querySelectorAll('.ranking-tab').forEach(tab => {
+                if (tab.dataset.diff === diffKey) {
+                    tab.className = 'ranking-tab px-2.5 py-1 rounded-lg font-bold bg-amber-500 text-slate-950 shadow';
+                } else {
+                    tab.className = 'ranking-tab px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300 hover:bg-slate-700';
+                }
+            });
+
+            const container = document.getElementById('ranking-list-container');
+            container.innerHTML = `
+                <div class="text-center py-8 text-xs text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin text-amber-400 text-lg mb-2"></i><br>
+                    スコアデータを読み込み中...
+                </div>
+            `;
+
+            let scores = [];
+            if (window.fetchLeaderboard) {
+                scores = await window.fetchLeaderboard(diffKey);
+            }
+
+            container.innerHTML = '';
+
+            if (!scores || scores.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-xs text-slate-500">
+                        まだスコア記録がありません。<br>プレイして最初の記録を作ろう！
+                    </div>
+                `;
+                return;
+            }
+
+            scores.forEach((item, index) => {
+                const rankNum = index + 1;
+                let rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 font-bold text-xs flex items-center justify-center">${rankNum}</span>`;
+                
+                if (rankNum === 1) {
+                    rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center shadow-md"><i class="fa-solid fa-crown text-[10px]"></i></span>`;
+                } else if (rankNum === 2) {
+                    rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-300 text-slate-900 font-black text-xs flex items-center justify-center shadow-md">2</span>`;
+                } else if (rankNum === 3) {
+                    rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-700 text-amber-100 font-black text-xs flex items-center justify-center shadow-md">3</span>`;
+                }
+
+                const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleDateString('ja-JP') : '';
+
+                const el = document.createElement('div');
+                el.className = `glass-panel p-2.5 rounded-xl border flex items-center justify-between ${
+                    rankNum === 1 ? 'border-amber-400/60 bg-amber-500/10' : 'border-slate-800 bg-slate-900/60'
+                }`;
+
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        ${rankBadge}
+                        <div>
+                            <div class="text-xs font-bold text-slate-100">${escapeHtml(item.name || '匿名')}</div>
+                            <div class="text-[9px] text-slate-500">${dateStr}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm font-black text-amber-400 font-mono">${item.score.toLocaleString()}</span>
+                        <span class="text-[10px] text-slate-400"> pts</span>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
         // --- Modals UI ---
         function buildDifficultyModal() {
             const container = document.getElementById('diff-options-container');
@@ -1278,7 +1635,6 @@
             const isOrganicOnly = diffConfig.isOrganicOnly;
 
             document.getElementById('recipe-current-diff').textContent = diffConfig.name;
-            
             container.innerHTML = '';
 
             const availableElements = diffConfig.elements;
@@ -1304,7 +1660,7 @@
                 let compHtml = '';
                 if (recipe.isNobleGasSpecial) {
                     const sym = recipe.formula.includes('He') ? 'He' : 'Ne';
-                    compHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">${sym} × 3+</span>`;
+                    compHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">💥 ${sym} × 3 (希ガスボム)</span>`;
                 } else {
                     compHtml = Object.entries(recipe.composition).map(([sym, num]) => {
                         const isB = sym === 'Ph';
@@ -1359,6 +1715,35 @@
         });
         document.getElementById('btn-restart-gameover').addEventListener('click', () => {
             initGame();
+        });
+
+        // Submit Score for Leaderboard
+        btnSubmitScore.addEventListener('click', async () => {
+            const inputEl = document.getElementById('player-name-input');
+            const name = inputEl.value.trim() || '匿名元素マスター';
+            
+            btnSubmitScore.disabled = true;
+            btnSubmitScore.classList.add('opacity-50');
+
+            if (window.saveLeaderboardScore) {
+                await window.saveLeaderboardScore(name, score, currentDifficultyKey);
+                scoreSubmitMsg.textContent = '✓ スコアをランキングに登録しました！';
+                scoreSubmitMsg.classList.remove('hidden');
+            }
+        });
+
+        // Ranking Modal
+        document.getElementById('btn-ranking').addEventListener('click', () => {
+            renderRankingList(currentDifficultyKey);
+            openModal(modalRanking);
+        });
+        document.getElementById('btn-close-ranking').addEventListener('click', () => closeModal(modalRanking));
+
+        document.getElementById('ranking-tabs').addEventListener('click', (e) => {
+            const btn = e.target.closest('.ranking-tab');
+            if (btn && btn.dataset.diff) {
+                renderRankingList(btn.dataset.diff);
+            }
         });
 
         // Modals Controls
