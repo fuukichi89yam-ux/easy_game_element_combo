@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Element Combo - 化学元素パズル</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            background: #090d16;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .element-node {
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .element-node.selected {
+            transform: scale(1.15);
+            z-index: 20;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.9), inset 0 0 8px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Red Blink effect for Hints */
+        @keyframes hintBlink {
+            0%, 100% {
+                box-shadow: 0 0 4px #ef4444, inset 0 0 4px #ef4444;
+                border-color: #f87171;
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 20px #ef4444, inset 0 0 10px #ef4444;
+                border-color: #dc2626;
+                transform: scale(1.12);
+                z-index: 25;
+            }
+        }
+
+        .hint-node {
+            animation: hintBlink 0.6s infinite ease-in-out;
+            z-index: 25 !important;
+        }
+
+        /* Excellent Banner Animation */
+        @keyframes excellentPop {
+            0% { transform: translate(-50%, -50%) scale(0.3) rotate(-5deg); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1) rotate(2deg); opacity: 1; }
+            70% { transform: translate(-50%, -50%) scale(1.0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -80%) scale(1.1); opacity: 0; }
+        }
+
+        .excellent-banner {
+            animation: excellentPop 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            pointer-events: none;
+        }
+
+        .grid-container {
+            perspective: 1000px;
+        }
+
+        .board-rotate {
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        #connection-svg {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.4); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .pop-in {
+            animation: popIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Hint Banner Pop Animation */
+        @keyframes hintBannerPop {
+            0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+            70% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .hint-banner-anim {
+            animation: hintBannerPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden">
+
+    <!-- Header / Score Board & Difficulty -->
+    <header class="w-full glass-panel px-4 py-2 flex justify-between items-center z-30 shadow-lg">
+        <div class="flex items-center space-x-2">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-lg shadow-md">
+                <i class="fa-solid fa-atom text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold leading-tight bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Element Combo</h1>
+                <!-- Difficulty selector button -->
+                <button id="btn-change-diff" class="mt-0.5 text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition border">
+                    <span id="diff-badge-text">NORMAL</span>
+                    <i class="fa-solid fa-chevron-down text-[8px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div class="text-center">
+                <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">SCORE</div>
+                <div id="score-display" class="text-lg font-black text-amber-400 leading-tight">0</div>
+            </div>
+            <button id="btn-recipes" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 border border-slate-700">
+                <i class="fa-solid fa-book-bookmark text-cyan-400"></i>
+                レシピ
+            </button>
+        </div>
+    </header>
+
+    <!-- Reaction / Molecule Preview Bar -->
+    <div class="w-full px-4 py-1.5 flex justify-center items-center gap-3 z-20">
+        <div id="current-selection-container" class="glass-panel px-4 py-1 rounded-full flex items-center min-w-[220px] justify-center gap-2 border border-slate-700 min-h-[40px]">
+            <span id="selection-placeholder" class="text-xs text-slate-400 italic">ドラッグして元素を選択...</span>
+            <div id="selection-nodes" class="flex items-center gap-1 hidden flex-wrap justify-center"></div>
+            <span id="molecule-match-name" class="ml-2 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hidden"></span>
+        </div>
+    </div>
+
+    <!-- Main Game Board Container -->
+    <main class="flex-1 flex flex-col items-center justify-center px-4 relative w-full max-w-md mx-auto">
+        <div class="grid-container w-full aspect-square relative flex items-center justify-center">
+            <!-- SVG Overlay for connecting lines -->
+            <svg id="connection-svg"></svg>
+            
+            <!-- Floating Score Popups Container -->
+            <div id="popup-container" class="absolute inset-0 pointer-events-none z-40"></div>
+
+            <!-- Excellent Overlay Banner Container -->
+            <div id="excellent-container" class="absolute inset-0 pointer-events-none z-50 flex items-center justify-center"></div>
+
+            <!-- Hint Overlay Banner Container -->
+            <div id="hint-banner-container" class="absolute inset-0 pointer-events-none z-50 flex items-center justify-center"></div>
+
+            <!-- The Grid Board -->
+            <div id="board" class="board-rotate grid grid-cols-6 grid-rows-6 gap-2 w-full h-full p-2.5 glass-panel rounded-2xl relative shadow-2xl border border-slate-700/60">
+                <!-- Nodes generated dynamically by JS -->
+            </div>
+        </div>
+
+        <!-- Board Control Buttons -->
+        <div class="mt-2.5 flex flex-col gap-2 z-20 w-full px-4">
+            <!-- Rotation and Reset controls -->
+            <div class="flex items-center justify-center gap-2.5 w-full">
+                <button id="btn-rotate-left" class="flex-1 py-1.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-200 transition active:scale-95 shadow-md">
+                    <i class="fa-solid fa-rotate-left text-cyan-400 text-xs"></i>
+                    左回転
+                </button>
+                <button id="btn-reset" class="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs font-bold text-slate-400 hover:text-rose-400 transition active:scale-95 shadow-md" title="リセット">
+                    <i class="fa-solid fa-arrow-rotate-right"></i>
+                </button>
+                <button id="btn-rotate-right" class="flex-1 py-1.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-200 transition active:scale-95 shadow-md">
+                    右回転
+                    <i class="fa-solid fa-rotate-right text-cyan-400 text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Shuffle & Hint Buttons -->
+            <div class="flex items-center justify-center gap-2.5 w-full">
+                <!-- Shuffle Button -->
+                <button id="btn-shuffle" class="flex-1 py-2 px-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-800 disabled:to-slate-800 border border-indigo-400/40 disabled:border-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-white disabled:text-slate-500 transition active:scale-95 shadow-md disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-shuffle text-amber-300 disabled:text-slate-600 text-xs"></i>
+                    <span id="shuffle-btn-text">シャッフル (残り1回)</span>
+                </button>
+
+                <!-- Hint Button -->
+                <button id="btn-hint" class="flex-1 py-2 px-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-slate-800 disabled:to-slate-800 border border-amber-400/40 disabled:border-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-white disabled:text-slate-500 transition active:scale-95 shadow-md disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-lightbulb text-yellow-200 disabled:text-slate-600 text-xs"></i>
+                    <span id="hint-btn-text">ヒント</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer info -->
+    <footer class="w-full py-1.5 text-center text-[10px] text-slate-500 z-10">
+        元素を繋いで化学反応を起こそう！ | 有機化合物縛りモード & 新レシピ多数搭載！
+    </footer>
+
+    <!-- Game Over Modal -->
+    <div id="modal-gameover" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-sm rounded-2xl p-6 border border-rose-500/40 flex flex-col items-center text-center shadow-2xl">
+            <div class="w-16 h-16 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center mb-3">
+                <i class="fa-solid fa-skull text-3xl text-rose-400"></i>
+            </div>
+            <h2 class="text-xl font-black text-rose-400 mb-1">GAME OVER</h2>
+            <p class="text-xs text-slate-400 mb-4">手詰まりになりました（消去可能な分子がなく、シャッフルも不可能です）</p>
+
+            <div class="w-full bg-slate-900/80 rounded-xl p-3 border border-slate-800 mb-5">
+                <div class="text-[10px] text-slate-400 font-bold">FINAL SCORE</div>
+                <div id="gameover-score" class="text-3xl font-black text-amber-400">0</div>
+                <div class="text-[10px] text-slate-500 mt-1">モード: <span id="gameover-diff" class="text-cyan-400 font-bold">NORMAL</span></div>
+            </div>
+
+            <button id="btn-restart-gameover" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-bold text-white rounded-xl shadow-lg transition active:scale-95 text-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> もう一度挑戦する
+            </button>
+        </div>
+    </div>
+
+    <!-- Difficulty Select Modal -->
+    <div id="modal-diff" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="glass-panel w-full max-w-sm rounded-2xl p-5 border border-slate-700 flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700">
+                <h2 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> ゲームモード / 難易度選択
+                </h2>
+                <button id="btn-close-diff" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2.5" id="diff-options-container">
+                <!-- Generated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Molecule Recipes Modal -->
+    <div id="modal-recipes" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="glass-panel w-full max-w-sm rounded-2xl p-5 border border-slate-700 max-h-[85vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-700">
+                <h2 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-flask"></i> 合成分子レシピ一覧
+                </h2>
+                <button id="btn-close-recipes" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="mb-2 text-[11px] text-slate-400 flex justify-between items-center px-1">
+                <span>現在のモード: <strong id="recipe-current-diff" class="text-cyan-300">NORMAL</strong></span>
+                <span id="recipe-count-badge" class="text-[10px] px-2 py-0.5 bg-slate-800 rounded-full border border-slate-700"></span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="recipe-list-container">
+                <!-- Dynamic recipe items -->
+            </div>
+
+            <div class="mt-3 pt-2 border-t border-slate-800 text-center">
+                <p class="text-[10px] text-slate-400">
+                    <span class="text-pink-400 font-bold">He / Ne</span> は単体3個以上つなげると消去できます。<br>
+                    <span class="text-purple-300 font-bold">ORGANICモード</span> では有機化合物のみ作れます！
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Script -->
+    <script>
+        const GRID_SIZE = 6;
+        const EXCELLENT_SCORE_THRESHOLD = 400;
+
+        // SVG Helper for Benzene Regular Hexagon
+        const BENZENE_HEX_SVG = `
+            <svg class="w-5 h-5 stroke-current fill-none my-0.5" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12,2 20.66,7 20.66,17 12,22 3.34,17 3.34,7" />
+                <circle cx="12" cy="12" r="4.5" stroke-width="1.6" />
+            </svg>
+        `;
+
+        const BENZENE_HEX_SVG_SMALL = `
+            <svg class="w-3.5 h-3.5 stroke-current fill-none inline-block align-middle" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12,2 20.66,7 20.66,17 12,22 3.34,17 3.34,7" />
+                <circle cx="12" cy="12" r="4.5" stroke-width="1.6" />
+            </svg>
+        `;
+
+        // --- All 24 Elements Definition ---
+        const ALL_ELEMENTS = {
+            H: { symbol: 'H', name: '水素', color: 'from-blue-500 to-cyan-400', textColor: 'text-white', borderColor: 'border-cyan-300' },
+            C: { symbol: 'C', name: '炭素', color: 'from-slate-700 to-slate-900', textColor: 'text-white', borderColor: 'border-slate-500' },
+            O: { symbol: 'O', name: '酸素', color: 'from-red-500 to-rose-600', textColor: 'text-white', borderColor: 'border-red-400' },
+            N: { symbol: 'N', name: '窒素', color: 'from-indigo-600 to-blue-700', textColor: 'text-white', borderColor: 'border-indigo-400' },
+            F: { symbol: 'F', name: 'フッ素', color: 'from-emerald-400 to-teal-500', textColor: 'text-slate-950', borderColor: 'border-emerald-300' },
+            S: { symbol: 'S', name: '硫黄', color: 'from-amber-400 to-yellow-500', textColor: 'text-slate-950', borderColor: 'border-amber-300' },
+            Cl: { symbol: 'Cl', name: '塩素', color: 'from-lime-500 to-green-600', textColor: 'text-white', borderColor: 'border-lime-300' },
+            Cu: { symbol: 'Cu', name: '銅', color: 'from-orange-600 to-amber-700', textColor: 'text-white', borderColor: 'border-orange-400' },
+            Hg: { symbol: 'Hg', name: '水銀', color: 'from-slate-300 to-slate-400', textColor: 'text-slate-900', borderColor: 'border-white' },
+            He: { symbol: 'He', name: 'ヘリウム', color: 'from-pink-400 to-rose-400', textColor: 'text-slate-950', borderColor: 'border-pink-200' },
+            COOH: { symbol: 'COOH', name: 'カルボン基', color: 'from-purple-600 to-violet-700', textColor: 'text-white', borderColor: 'border-purple-300' },
+            Ph: { symbol: 'Ph', name: 'ベンゼン環', color: 'from-amber-400 to-yellow-500', textColor: 'text-slate-950', borderColor: 'border-amber-200', isBenzene: true },
+            Mn: { symbol: 'Mn', name: 'マンガン', color: 'from-purple-900 to-indigo-950', textColor: 'text-purple-200', borderColor: 'border-purple-400' },
+            Ca: { symbol: 'Ca', name: 'カルシウム', color: 'from-amber-200 to-orange-300', textColor: 'text-slate-900', borderColor: 'border-amber-400' },
+            Ag: { symbol: 'Ag', name: '銀', color: 'from-slate-200 to-zinc-400', textColor: 'text-slate-900', borderColor: 'border-cyan-100' },
+            Li: { symbol: 'Li', name: 'リチウム', color: 'from-rose-500 to-pink-600', textColor: 'text-white', borderColor: 'border-pink-300' },
+            B:  { symbol: 'B',  name: 'ホウ素', color: 'from-stone-600 to-amber-900', textColor: 'text-amber-100', borderColor: 'border-amber-600' },
+            Ne: { symbol: 'Ne', name: 'ネオン', color: 'from-orange-500 to-red-500', textColor: 'text-white', borderColor: 'border-orange-300' },
+            Zn: { symbol: 'Zn', name: '亜鉛', color: 'from-teal-600 to-slate-700', textColor: 'text-white', borderColor: 'border-teal-300' },
+            Au: { symbol: 'Au', name: '金', color: 'from-yellow-300 to-amber-500', textColor: 'text-slate-900', borderColor: 'border-yellow-100' },
+            P:  { symbol: 'P',  name: 'リン', color: 'from-orange-700 to-red-900', textColor: 'text-orange-200', borderColor: 'border-orange-500' },
+            Si: { symbol: 'Si', name: 'ケイ素', color: 'from-sky-700 to-cyan-900', textColor: 'text-sky-200', borderColor: 'border-sky-400' },
+            Al: { symbol: 'Al', name: 'アルミニウム', color: 'from-zinc-300 to-slate-500', textColor: 'text-slate-950', borderColor: 'border-zinc-200' },
+            Mg: { symbol: 'Mg', name: 'マグネシウム', color: 'from-emerald-600 to-green-800', textColor: 'text-white', borderColor: 'border-emerald-300' }
+        };
+
+        // --- Difficulties / Modes Definition ---
+        const DIFFICULTIES = {
+            easy: {
+                id: 'easy',
+                name: 'EASY',
+                badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                desc: '基本の6種類。初心者でもサクサク繋がります。',
+                elements: ['H', 'O', 'C', 'N', 'He', 'COOH'],
+                weights: { H: 6, O: 4, C: 3, N: 2, He: 1, COOH: 1 }
+            },
+            normal: {
+                id: 'normal',
+                name: 'NORMAL',
+                badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+                desc: '標準の12種類。ベンゼン環（Ph）も登場！',
+                elements: ['H', 'O', 'C', 'N', 'F', 'S', 'Cl', 'Cu', 'Hg', 'He', 'COOH', 'Ph'],
+                weights: { H: 6, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 1, COOH: 1, Ph: 1.2 }
+            },
+            organic: {
+                id: 'organic',
+                name: 'ORGANIC (有機縛り)',
+                badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+                desc: '【上級】有機化合物のみ合成可能！無機物は消せません。',
+                elements: ['H', 'C', 'O', 'N', 'Cl', 'F', 'COOH', 'Ph'],
+                isOrganicOnly: true,
+                weights: { H: 6, C: 5, O: 4, N: 3, Cl: 2, F: 1.5, COOH: 2, Ph: 2 }
+            },
+            hard: {
+                id: 'hard',
+                name: 'HARD',
+                badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                desc: '19種類登場。ケイ素・アルミ・マグネシウム等も追加！',
+                elements: ['H', 'O', 'C', 'N', 'F', 'S', 'Cl', 'Cu', 'Hg', 'He', 'COOH', 'Ph', 'Ca', 'Ag', 'Li', 'Zn', 'Ne', 'Si', 'Al', 'Mg'],
+                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 1, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 1, Si: 1.2, Al: 1.2, Mg: 1.2 }
+            },
+            expert: {
+                id: 'expert',
+                name: 'EXPERT',
+                badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                desc: '全24種類が勢揃い！高い化学知識と機転が必要。',
+                elements: Object.keys(ALL_ELEMENTS),
+                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 1, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 1, Mn: 1, B: 1, Au: 0.8, P: 1, Si: 1, Al: 1, Mg: 1 }
+            }
+        };
+
+        // --- All Molecule Recipes (With Organic Tag) ---
+        const ALL_RECIPES = [
+            // Simple Elemental Molecules
+            { name: '水素分子', formula: 'H₂', composition: { H: 2 }, score: 80, desc: '宇宙で最も豊富な二原子分子', isOrganic: false },
+            { name: '酸素分子', formula: 'O₂', composition: { O: 2 }, score: 100, desc: '生物の呼吸に必要な気体', isOrganic: false },
+            { name: 'オゾン', formula: 'O₃', composition: { O: 3 }, score: 200, desc: '紫外線を遮断する酸素の同素体', isOrganic: false },
+            { name: '窒素分子', formula: 'N₂', composition: { N: 2 }, score: 100, desc: '地球大気の約8割を占める不活性な気体', isOrganic: false },
+
+            // Standard Organic Compounds
+            { name: 'メタン', formula: 'CH₄', composition: { C: 1, H: 4 }, score: 300, desc: '最も単純なアルカン（有機化合物）', isOrganic: true },
+            { name: 'エチレン', formula: 'C₂H₄', composition: { C: 2, H: 4 }, score: 320, desc: '最も単純なアルケン。植物の熟成ホルモン', isOrganic: true },
+            { name: 'メチルアルコール', formula: 'CH₃OH', composition: { C: 1, H: 4, O: 1 }, score: 350, desc: 'メタノール。最も単純なアルコール', isOrganic: true },
+            { name: 'エチルアルコール', formula: 'C₂H₅OH', composition: { C: 2, H: 6, O: 1 }, score: 450, desc: 'エタノール。お酒や消毒液の主成分', isOrganic: true },
+            { name: 'グルコース', formula: 'C₆H₁₂O₆', composition: { C: 6, H: 12, O: 6 }, score: 850, desc: 'ブドウ糖。生物の主要なエネルギー源', isOrganic: true },
+
+            { name: 'ギ酸', formula: 'HCOOH', composition: { H: 1, COOH: 1 }, score: 350, desc: '蟻の毒成分でもある有機酸', isOrganic: true },
+            { name: 'ギ酸(分解連鎖)', formula: 'HCOOH', composition: { C: 1, O: 2, H: 2 }, score: 380, desc: 'C, O, O, Hをつなげたギ酸合成', isOrganic: true },
+            { name: '酢酸', formula: 'CH₃COOH', composition: { C: 1, H: 3, COOH: 1 }, score: 500, desc: 'お酢の主成分', isOrganic: true },
+            { name: '酢酸(分解連鎖)', formula: 'CH₃COOH', composition: { C: 2, O: 2, H: 4 }, score: 550, desc: 'C2, O2, H4をつなげた酢酸合成', isOrganic: true },
+
+            // Benzene / Aromatic Ring Organic Recipes
+            { name: 'ベンゼン', formula: 'C₆H₆', composition: { Ph: 1, H: 1 }, score: 300, desc: '代表的な芳香族炭化水素', isOrganic: true },
+            { name: 'フェノール', formula: 'C₆H₅OH', composition: { Ph: 1, O: 1, H: 1 }, score: 400, desc: '消毒薬・プラスチック原料', isOrganic: true },
+            { name: '安息香酸', formula: 'C₆H₅COOH', composition: { Ph: 1, COOH: 1 }, score: 450, desc: '保存料として使われる芳香族カルボン酸', isOrganic: true },
+            { name: '安息香酸(分解連鎖)', formula: 'C₆H₅COOH', composition: { Ph: 1, C: 1, O: 2, H: 1 }, score: 500, desc: 'Ph + C + O + O + H による合成', isOrganic: true },
+            { name: 'トルエン', formula: 'C₆H₅CH₃', composition: { Ph: 1, C: 1, H: 3 }, score: 450, desc: 'シンナー等の有機溶剤成分', isOrganic: true },
+            { name: 'ニトロベンゼン', formula: 'C₆H₅NO₂', composition: { Ph: 1, N: 1, O: 2 }, score: 520, desc: 'アーモンド臭を持つ黄色油状液体', isOrganic: true },
+            { name: '安息香酸メチル', formula: 'C₆H₅COOCH₃', composition: { Ph: 1, C: 2, O: 2, H: 3 }, score: 650, desc: '甘い果実臭を持つエステル', isOrganic: true },
+
+            { name: 'パラジクロロベンゼン', formula: 'C₆H₄Cl₂', composition: { Ph: 1, Cl: 2 }, score: 420, desc: '防虫剤や芳香剤に使われる有機塩素化合物', isOrganic: true },
+            { name: 'トリニトロトルエン', formula: 'C₇H₅N₃O₆', composition: { Ph: 1, C: 1, N: 3, O: 6, H: 2 }, score: 750, desc: 'TNT爆薬として有名なニトロ化合物', isOrganic: true },
+            { name: 'サリチル酸', formula: 'C₇H₆O₃', composition: { Ph: 1, COOH: 1, O: 1, H: 1 }, score: 550, desc: '消炎鎮痛剤や角質軟化薬の原料', isOrganic: true },
+            { name: 'アセチルサリチル酸', formula: 'C₉H₈O₄', composition: { Ph: 1, COOH: 1, C: 1, O: 1, H: 3 }, score: 680, desc: 'アスピリンとして有名な世界初の合成解熱鎮痛薬', isOrganic: true },
+
+            // Standard Inorganic Compounds
+            { name: '水', formula: 'H₂O', composition: { H: 2, O: 1 }, score: 150, desc: '生命に不可欠な無機化合物', isOrganic: false },
+            { name: '過酸化水素', formula: 'H₂O₂', composition: { H: 2, O: 2 }, score: 250, desc: '強力な酸化剤・消毒液', isOrganic: false },
+            { name: '二酸化炭素', formula: 'CO₂', composition: { C: 1, O: 2 }, score: 200, desc: '光合成や呼気に関わる気体', isOrganic: false },
+            { name: '一酸化炭素', formula: 'CO', composition: { C: 1, O: 1 }, score: 120, desc: '無色無臭の有毒ガス', isOrganic: false },
+            { name: 'アンモニア', formula: 'NH₃', composition: { N: 1, H: 3 }, score: 250, desc: '刺激臭を持つ気体', isOrganic: false },
+            { name: '塩化水素', formula: 'HCl', composition: { H: 1, Cl: 1 }, score: 100, desc: '水溶液は塩酸になる', isOrganic: false },
+            { name: 'フッ化水素', formula: 'HF', composition: { H: 1, F: 1 }, score: 120, desc: 'ガラスを侵食する強酸', isOrganic: false },
+            { name: '硫化水素', formula: 'H₂S', composition: { H: 2, S: 1 }, score: 200, desc: '温泉特有の硫黄臭の気体', isOrganic: false },
+            { name: '二酸化硫黄', formula: 'SO₂', composition: { S: 1, O: 2 }, score: 220, desc: '刺激臭のある火山ガス成分', isOrganic: false },
+            { name: '酸化銅', formula: 'CuO', composition: { Cu: 1, O: 1 }, score: 180, desc: '黒色の金属酸化物', isOrganic: false },
+            { name: '酸化水銀', formula: 'HgO', composition: { Hg: 1, O: 1 }, score: 220, desc: '赤色・黄色の結晶粉末', isOrganic: false },
+            { name: '塩化銅', formula: 'CuCl₂', composition: { Cu: 1, Cl: 2 }, score: 300, desc: '青緑色の塩類', isOrganic: false },
+
+            // Si, Al, Mg & Other Metallic Recipes
+            { name: '二酸化ケイ素', formula: 'SiO₂', composition: { Si: 1, O: 2 }, score: 220, desc: '石英や水晶、ガラスの主成分', isOrganic: false },
+            { name: '四フッ化ケイ素', formula: 'SiF₄', composition: { Si: 1, F: 4 }, score: 350, desc: '無色の有毒気体', isOrganic: false },
+            { name: '酸化アルミニウム', formula: 'Al₂O₃', composition: { Al: 2, O: 3 }, score: 380, desc: 'アルミナ。ルビーやサファイアの主成分', isOrganic: false },
+            { name: '塩化アルミニウム', formula: 'AlCl₃', composition: { Al: 1, Cl: 3 }, score: 320, desc: 'ルイス酸触媒として多用される', isOrganic: false },
+            { name: '酸化マグネシウム', formula: 'MgO', composition: { Mg: 1, O: 1 }, score: 160, desc: '耐火レンガや胃腸薬に使われる', isOrganic: false },
+            { name: '塩化マグネシウム', formula: 'MgCl₂', composition: { Mg: 1, Cl: 2 }, score: 280, desc: '豆腐の凝固剤（にがり）の主成分', isOrganic: false },
+
+            { name: '生石灰(酸化カルシウム)', formula: 'CaO', composition: { Ca: 1, O: 1 }, score: 160, desc: '乾燥剤として使われる白色固形物', isOrganic: false },
+            { name: '塩化カルシウム', formula: 'CaCl₂', composition: { Ca: 1, Cl: 2 }, score: 280, desc: '融雪剤や除湿剤に利用される', isOrganic: false },
+            { name: '塩化銀', formula: 'AgCl', composition: { Ag: 1, Cl: 1 }, score: 180, desc: '感光性を持つ白色沈殿', isOrganic: false },
+            { name: '酸化銀', formula: 'Ag₂O', composition: { Ag: 2, O: 1 }, score: 260, desc: '暗褐色の粉末', isOrganic: false },
+            { name: '塩化リチウム', formula: 'LiCl', composition: { Li: 1, Cl: 1 }, score: 160, desc: '炎色反応で美しい赤色を示す', isOrganic: false },
+            { name: '酸化亜鉛', formula: 'ZnO', composition: { Zn: 1, O: 1 }, score: 180, desc: '日焼け止めなどに使われる白色顔料', isOrganic: false },
+            { name: '二酸化マンガン', formula: 'MnO₂', composition: { Mn: 1, O: 2 }, score: 260, desc: '乾電池の正極材料や触媒', isOrganic: false },
+            { name: '三フッ化ホウ素', formula: 'BF₃', composition: { B: 1, F: 3 }, score: 350, desc: 'ルイス酸触媒として有名', isOrganic: false },
+            { name: 'ホウ酸', formula: 'H₃BO₃', composition: { B: 1, H: 3, O: 3 }, score: 550, desc: '目薬やゴキブリ退治に使われる', isOrganic: false },
+            { name: 'リン酸', formula: 'H₃PO₄', composition: { P: 1, H: 3, O: 4 }, score: 650, desc: '肥料や清涼飲料水に使われる', isOrganic: false },
+
+            // Noble Gas Specials
+            { name: 'ヘリウム塊', formula: 'He (×3+)', composition: { He: 3 }, isNobleGasSpecial: true, score: 250, desc: '不活性ガス。3つ以上繋げて破裂！', isOrganic: false },
+            { name: 'ネオン塊', formula: 'Ne (×3+)', composition: { Ne: 3 }, isNobleGasSpecial: true, score: 300, desc: 'ネオンサイン。3つ以上で鮮やかに発光消去！', isOrganic: false }
+        ];
+
+        // --- Sound Controller ---
+        class SoundController {
+            constructor() { this.ctx = null; }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            playTone(freq, duration = 0.1, type = 'sine') {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            }
+            playSelectSound(pitchIndex) {
+                this.init();
+                const baseFreq = 300;
+                const freq = baseFreq * Math.pow(1.06, pitchIndex);
+                this.playTone(freq, 0.08, 'sine');
+            }
+            playMatchSound() {
+                this.init();
+                if (!this.ctx) return;
+                [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.15, 'triangle'), i * 60);
+                });
+            }
+            playExcellentSound() {
+                this.init();
+                if (!this.ctx) return;
+                [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.22, 'square'), i * 75);
+                });
+            }
+            playRotateSound() {
+                this.init();
+                this.playTone(220, 0.12, 'sawtooth');
+            }
+            playShuffleSound() {
+                this.init();
+                if (!this.ctx) return;
+                [350, 450, 550, 650, 750].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.08, 'sine'), i * 40);
+                });
+            }
+            playHintSound() {
+                this.init();
+                if (!this.ctx) return;
+                [880, 1174.66, 1396.91].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.1, 'sine'), i * 80);
+                });
+            }
+            playGameOverSound() {
+                this.init();
+                if (!this.ctx) return;
+                [400, 350, 300, 220].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.25, 'sawtooth'), i * 150);
+                });
+            }
+        }
+        const sound = new SoundController();
+
+        // --- Game State Variables ---
+        let currentDifficultyKey = 'normal';
+        let grid = [];
+        let selectedPath = [];
+        let isDragging = false;
+        let score = 0;
+        let matchedRecipe = null;
+        let elementWeightedPool = [];
+        let hasShuffled = false;
+        let hintCooldownTimer = null;
+        let hintCooldownSeconds = 0;
+        let isGameOver = false;
+
+        // DOM Elements
+        const boardEl = document.getElementById('board');
+        const svgEl = document.getElementById('connection-svg');
+        const scoreDisplay = document.getElementById('score-display');
+        const selectionNodesEl = document.getElementById('selection-nodes');
+        const selectionPlaceholder = document.getElementById('selection-placeholder');
+        const moleculeMatchName = document.getElementById('molecule-match-name');
+        const popupContainer = document.getElementById('popup-container');
+        const excellentContainer = document.getElementById('excellent-container');
+        const hintBannerContainer = document.getElementById('hint-banner-container');
+        const diffBadgeText = document.getElementById('diff-badge-text');
+        const btnChangeDiff = document.getElementById('btn-change-diff');
+        const btnShuffle = document.getElementById('btn-shuffle');
+        const shuffleBtnText = document.getElementById('shuffle-btn-text');
+        const btnHint = document.getElementById('btn-hint');
+        const hintBtnText = document.getElementById('hint-btn-text');
+        const modalGameOver = document.getElementById('modal-gameover');
+
+        // --- Initial Operations ---
+        function setDifficulty(diffKey) {
+            currentDifficultyKey = diffKey;
+            const diffConfig = DIFFICULTIES[diffKey];
+            
+            diffBadgeText.textContent = diffConfig.name;
+            btnChangeDiff.className = `mt-0.5 text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 transition border ${diffConfig.badgeClass}`;
+
+            elementWeightedPool = [];
+            Object.entries(diffConfig.weights).forEach(([symbol, weight]) => {
+                const count = Math.round(weight * 4);
+                for (let i = 0; i < count; i++) {
+                    elementWeightedPool.push(symbol);
+                }
+            });
+
+            initGame();
+        }
+
+        function initGame() {
+            score = 0;
+            isGameOver = false;
+            updateScore(0);
+            hasShuffled = false;
+            updateShuffleButtonState();
+            resetHintCooldown();
+            closeModal(modalGameOver);
+            
+            grid = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                grid[r] = [];
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    grid[r][c] = getRandomElement();
+                }
+            }
+            renderBoard();
+
+            // Check if initial board has valid moves
+            setTimeout(checkGameOverCondition, 300);
+        }
+
+        function updateShuffleButtonState() {
+            if (hasShuffled) {
+                btnShuffle.disabled = true;
+                shuffleBtnText.textContent = 'シャッフル済';
+            } else {
+                btnShuffle.disabled = false;
+                shuffleBtnText.textContent = 'シャッフル (残り1回)';
+            }
+        }
+
+        function shuffleBoard() {
+            if (hasShuffled || isGameOver) return;
+            hasShuffled = true;
+            updateShuffleButtonState();
+            sound.playShuffleSound();
+
+            let flatGrid = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    flatGrid.push(grid[r][c]);
+                }
+            }
+
+            for (let i = flatGrid.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [flatGrid[i], flatGrid[j]] = [flatGrid[j], flatGrid[i]];
+            }
+
+            let idx = 0;
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    grid[r][c] = flatGrid[idx++];
+                }
+            }
+
+            renderBoard();
+            setTimeout(checkGameOverCondition, 300);
+        }
+
+        // --- Hint Search & Game Over Logic ---
+        function resetHintCooldown() {
+            if (hintCooldownTimer) clearInterval(hintCooldownTimer);
+            hintCooldownSeconds = 0;
+            btnHint.disabled = false;
+            hintBtnText.textContent = 'ヒント';
+        }
+
+        // Convert chemical formula to mosaicked format with '?'
+        function getMosaickedFormula(formula) {
+            let chars = formula.split('');
+            let candidates = [];
+            for (let i = 0; i < chars.length; i++) {
+                // Target alphanumeric characters and subscripts for masking
+                if (/[A-Za-z0-9₁₂₃₄₅₆₇₈₉₀]/.test(chars[i])) {
+                    candidates.push(i);
+                }
+            }
+            if (candidates.length === 0) return formula;
+            
+            // Mask about 40-50% of the formula characters (at least 1)
+            let maskCount = Math.max(1, Math.floor(candidates.length * 0.45));
+            let shuffled = [...candidates].sort(() => 0.5 - Math.random());
+            
+            for (let i = 0; i < maskCount; i++) {
+                chars[shuffled[i]] = '?';
+            }
+            return chars.join('');
+        }
+
+        // Format chemical reaction / creation formula
+        function getReactionFormula(recipe) {
+            if (recipe.isNobleGasSpecial) {
+                const sym = recipe.formula.includes('He') ? 'He' : 'Ne';
+                return `3 ${sym} ➔ ${recipe.name}`;
+            }
+            const compParts = Object.entries(recipe.composition).map(([sym, count]) => {
+                const displaySym = sym === 'Ph' ? 'Ph' : sym;
+                return count > 1 ? `${count}${displaySym}` : displaySym;
+            });
+            return `${compParts.join(' + ')} ➔ ${recipe.formula}`;
+        }
+
+        // Display stylized Hint Banner Overlay
+        function showHintBanner(recipe) {
+            if (!hintBannerContainer) return;
+            hintBannerContainer.innerHTML = '';
+
+            const isMosaicPattern = Math.random() < 0.5;
+            const banner = document.createElement('div');
+            
+            if (isMosaicPattern) {
+                const mosaicked = getMosaickedFormula(recipe.formula);
+                banner.className = 'hint-banner-anim absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-[280px] p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/90 via-slate-900/95 to-amber-950/90 border-2 border-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.5)] backdrop-blur-md flex flex-col items-center justify-center text-center z-50 pointer-events-none';
+                banner.innerHTML = `
+                    <div class="flex items-center gap-1.5 text-amber-400 text-xs font-bold tracking-wider mb-1">
+                        <i class="fa-solid fa-user-secret text-amber-300"></i>
+                        <span>ヒント：伏字化学式</span>
+                    </div>
+                    <div class="text-2xl font-black text-amber-200 tracking-widest font-mono drop-shadow my-0.5">
+                        ${mosaicked}
+                    </div>
+                    <div class="text-[10px] text-slate-300 font-medium mt-0.5">
+                        隠された化合物の組み合わせを探そう！
+                    </div>
+                `;
+            } else {
+                const reactionStr = getReactionFormula(recipe);
+                banner.className = 'hint-banner-anim absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-[280px] p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/90 via-slate-900/95 to-cyan-950/90 border-2 border-cyan-400/80 shadow-[0_0_25px_rgba(34,211,238,0.5)] backdrop-blur-md flex flex-col items-center justify-center text-center z-50 pointer-events-none';
+                banner.innerHTML = `
+                    <div class="flex items-center gap-1.5 text-cyan-400 text-xs font-bold tracking-wider mb-1">
+                        <i class="fa-solid fa-vial-circle-check text-cyan-300"></i>
+                        <span>ヒント：合成反応式</span>
+                    </div>
+                    <div class="text-base font-extrabold text-cyan-200 font-mono drop-shadow my-0.5">
+                        ${reactionStr}
+                    </div>
+                    <div class="text-[10px] text-slate-300 font-medium mt-0.5">
+                        <strong class="text-emerald-300">${recipe.name}</strong> を作れるラインを繋ごう！
+                    </div>
+                `;
+            }
+
+            hintBannerContainer.appendChild(banner);
+
+            setTimeout(() => {
+                banner.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
+                banner.style.opacity = '0';
+                banner.style.transform = 'translate(-50%, -65%) scale(0.9)';
+                setTimeout(() => banner.remove(), 400);
+            }, 2600);
+        }
+
+        function triggerHint() {
+            if (hintCooldownSeconds > 0 || isGameOver) return;
+
+            const validMatch = findAnyValidMatchPath(grid);
+
+            if (validMatch) {
+                sound.playHintSound();
+                
+                // Highlight grid nodes
+                validMatch.path.forEach(cell => {
+                    const selector = `.element-node[data-row="${cell.r}"][data-col="${cell.c}"]`;
+                    const node = boardEl.querySelector(selector);
+                    if (node) {
+                        node.classList.add('hint-node');
+                    }
+                });
+
+                // Display new Hint Banner (Mosaic or Reaction Formula)
+                showHintBanner(validMatch.recipe);
+
+                setTimeout(() => {
+                    document.querySelectorAll('.hint-node').forEach(n => n.classList.remove('hint-node'));
+                }, 3200);
+
+            } else {
+                alert('現在消せる組み合わせが見つかりません！回転またはシャッフルを試してください。');
+            }
+
+            startHintCooldown();
+        }
+
+        function startHintCooldown() {
+            hintCooldownSeconds = 5;
+            btnHint.disabled = true;
+            hintBtnText.textContent = `ヒント (${hintCooldownSeconds}s)`;
+
+            hintCooldownTimer = setInterval(() => {
+                hintCooldownSeconds--;
+                if (hintCooldownSeconds <= 0) {
+                    clearInterval(hintCooldownTimer);
+                    btnHint.disabled = false;
+                    hintBtnText.textContent = 'ヒント';
+                } else {
+                    hintBtnText.textContent = `ヒント (${hintCooldownSeconds}s)`;
+                }
+            }, 1000);
+        }
+
+        function simulateRotatedGrid(inputGrid, direction) {
+            const tempGrid = [];
+            for (let r = 0; r < GRID_SIZE; r++) tempGrid[r] = [];
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (direction === 'right') {
+                        tempGrid[c][GRID_SIZE - 1 - r] = inputGrid[r][c];
+                    } else {
+                        tempGrid[GRID_SIZE - 1 - c][r] = inputGrid[r][c];
+                    }
+                }
+            }
+
+            for (let c = 0; c < GRID_SIZE; c++) {
+                let emptyRow = GRID_SIZE - 1;
+                for (let r = GRID_SIZE - 1; r >= 0; r--) {
+                    if (tempGrid[r][c] !== null) {
+                        const val = tempGrid[r][c];
+                        tempGrid[r][c] = null;
+                        tempGrid[emptyRow][c] = val;
+                        emptyRow--;
+                    }
+                }
+            }
+            return tempGrid;
+        }
+
+        function checkGameOverCondition() {
+            if (isGameOver) return;
+
+            if (findAnyValidMatchPath(grid)) return;
+
+            const rightRotated = simulateRotatedGrid(grid, 'right');
+            if (findAnyValidMatchPath(rightRotated)) return;
+
+            const leftRotated = simulateRotatedGrid(grid, 'left');
+            if (findAnyValidMatchPath(leftRotated)) return;
+
+            const doubleRotated = simulateRotatedGrid(rightRotated, 'right');
+            if (findAnyValidMatchPath(doubleRotated)) return;
+
+            if (!hasShuffled) return;
+
+            triggerGameOver();
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            sound.playGameOverSound();
+            document.getElementById('gameover-score').textContent = score;
+            document.getElementById('gameover-diff').textContent = DIFFICULTIES[currentDifficultyKey].name;
+            openModal(modalGameOver);
+        }
+
+        function findAnyValidMatchPath(targetGrid) {
+            const directions = [
+                {r:-1, c:0}, {r:1, c:0}, {r:0, c:-1}, {r:0, c:1},
+                {r:-1, c:-1}, {r:-1, c:1}, {r:1, c:-1}, {r:1, c:1}
+            ];
+
+            const matchesFound = [];
+            let stepCount = 0;
+            const MAX_STEPS = 3000;
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (!targetGrid[r][c]) continue;
+                    dfsSearch({r, c}, [{r, c}], [targetGrid[r][c]]);
+                    if (matchesFound.length > 5 || stepCount >= MAX_STEPS) break;
+                }
+                if (matchesFound.length > 5 || stepCount >= MAX_STEPS) break;
+            }
+
+            function dfsSearch(curr, path, symbols) {
+                stepCount++;
+                if (stepCount >= MAX_STEPS) return;
+                if (path.length > 18) return; // レシピの最大長に合わせた実用的な深さ制限
+
+                const result = checkMatchedRecipe(symbols);
+                if (result) {
+                    matchesFound.push({ path: [...path], recipe: result.recipe });
+                    return;
+                }
+
+                for (let dir of directions) {
+                    if (stepCount >= MAX_STEPS || matchesFound.length > 5) break;
+
+                    const nr = curr.r + dir.r;
+                    const nc = curr.c + dir.c;
+                    if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && targetGrid[nr][nc]) {
+                        const alreadyVisited = path.some(p => p.r === nr && p.c === nc);
+                        if (!alreadyVisited) {
+                            dfsSearch({r: nr, c: nc}, [...path, {r: nr, c: nc}], [...symbols, targetGrid[nr][nc]]);
+                        }
+                    }
+                }
+            }
+
+            if (matchesFound.length > 0) {
+                return matchesFound[Math.floor(Math.random() * matchesFound.length)];
+            }
+            return null;
+        }
+
+        function getRandomElement() {
+            return elementWeightedPool[Math.floor(Math.random() * elementWeightedPool.length)];
+        }
+
+        function renderBoard() {
+            boardEl.innerHTML = '';
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const symbol = grid[r][c];
+                    const elData = ALL_ELEMENTS[symbol] || ALL_ELEMENTS.H;
+
+                    const node = document.createElement('div');
+                    node.dataset.row = r;
+                    node.dataset.col = c;
+                    node.className = `element-node relative flex flex-col items-center justify-center rounded-xl font-extrabold shadow-md border-2 ${elData.borderColor} bg-gradient-to-br ${elData.color} ${elData.textColor} pop-in`;
+                    
+                    if (elData.isBenzene) {
+                        node.innerHTML = `
+                            ${BENZENE_HEX_SVG}
+                            <span class="text-[9px] opacity-90 font-bold leading-none">${elData.name}</span>
+                        `;
+                    } else {
+                        const symbolSize = symbol.length > 3 ? 'text-[10px]' : (symbol.length > 2 ? 'text-xs' : (symbol.length > 1 ? 'text-sm' : 'text-lg'));
+                        node.innerHTML = `
+                            <span class="${symbolSize} leading-none tracking-tight">${symbol}</span>
+                            <span class="text-[9px] opacity-80 font-normal leading-none mt-0.5">${elData.name}</span>
+                        `;
+                    }
+
+                    boardEl.appendChild(node);
+                }
+            }
+        }
+
+        // --- Interactive Dragging ---
+        function getCellFromCoordinates(x, y) {
+            const nodes = document.querySelectorAll('.element-node');
+            for (let node of nodes) {
+                const rect = node.getBoundingClientRect();
+                if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                    return { r: parseInt(node.dataset.row), c: parseInt(node.dataset.col) };
+                }
+            }
+            return null;
+        }
+
+        function isAdjacent(c1, c2) {
+            const dr = Math.abs(c1.r - c2.r);
+            const dc = Math.abs(c1.c - c2.c);
+            return (dr <= 1 && dc <= 1) && !(dr === 0 && dc === 0);
+        }
+
+        function handlePointerDown(e) {
+            if (isGameOver) return;
+            sound.init();
+            document.querySelectorAll('.hint-node').forEach(n => n.classList.remove('hint-node'));
+
+            isDragging = true;
+            const cell = getCellFromCoordinates(e.clientX, e.clientY);
+            if (cell) {
+                selectedPath = [cell];
+                sound.playSelectSound(0);
+                updateSelectionUI();
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (!isDragging || isGameOver) return;
+            const cell = getCellFromCoordinates(e.clientX, e.clientY);
+            if (!cell) return;
+
+            const lastCell = selectedPath[selectedPath.length - 1];
+            
+            if (selectedPath.length > 1) {
+                const secondLast = selectedPath[selectedPath.length - 2];
+                if (secondLast.r === cell.r && secondLast.c === cell.c) {
+                    selectedPath.pop();
+                    sound.playSelectSound(selectedPath.length - 1);
+                    updateSelectionUI();
+                    return;
+                }
+            }
+
+            const alreadySelected = selectedPath.some(p => p.r === cell.r && p.c === cell.c);
+            if (!alreadySelected && isAdjacent(lastCell, cell)) {
+                selectedPath.push(cell);
+                sound.playSelectSound(selectedPath.length - 1);
+                updateSelectionUI();
+            }
+        }
+
+        function handlePointerUp() {
+            if (!isDragging || isGameOver) return;
+            isDragging = false;
+
+            if (matchedRecipe && selectedPath.length > 0) {
+                executeMatch(matchedRecipe);
+            }
+
+            clearSelection();
+        }
+
+        function clearSelection() {
+            selectedPath = [];
+            matchedRecipe = null;
+            updateSelectionUI();
+            document.querySelectorAll('.element-node').forEach(n => n.classList.remove('selected'));
+        }
+
+        function checkMatchedRecipe(pathSymbols) {
+            const counts = {};
+            pathSymbols.forEach(s => counts[s] = (counts[s] || 0) + 1);
+
+            const modeConfig = DIFFICULTIES[currentDifficultyKey];
+            const isOrganicOnlyMode = modeConfig.isOrganicOnly;
+
+            // Special Noble Gas (He, Ne) -> Invalid in ORGANIC mode
+            if (pathSymbols.length >= 3) {
+                if (!isOrganicOnlyMode && pathSymbols.every(s => s === 'He')) {
+                    return { recipe: ALL_RECIPES.find(r => r.formula.includes('He')), count: pathSymbols.length };
+                }
+                if (!isOrganicOnlyMode && pathSymbols.every(s => s === 'Ne')) {
+                    return { recipe: ALL_RECIPES.find(r => r.formula.includes('Ne')), count: pathSymbols.length };
+                }
+            }
+
+            const availableElements = modeConfig.elements;
+
+            for (let recipe of ALL_RECIPES) {
+                if (recipe.isNobleGasSpecial) continue;
+
+                // Organic Only mode constraint
+                if (isOrganicOnlyMode && !recipe.isOrganic) continue;
+                
+                const comp = recipe.composition;
+                const recipeKeys = Object.keys(comp);
+
+                if (!recipeKeys.every(k => availableElements.includes(k))) continue;
+
+                const countKeys = Object.keys(counts);
+                if (recipeKeys.length !== countKeys.length) continue;
+
+                let isMatch = true;
+                for (let key of recipeKeys) {
+                    if (counts[key] !== comp[key]) {
+                        isMatch = false;
+                        break;
+                    }
+                }
+
+                if (isMatch) return { recipe, count: pathSymbols.length };
+            }
+
+            return null;
+        }
+
+        function updateSelectionUI() {
+            document.querySelectorAll('.element-node').forEach(node => {
+                const r = parseInt(node.dataset.row);
+                const c = parseInt(node.dataset.col);
+                if (selectedPath.some(p => p.r === r && p.c === c)) {
+                    node.classList.add('selected');
+                } else {
+                    node.classList.remove('selected');
+                }
+            });
+
+            drawSVGConnections();
+
+            const pathSymbols = selectedPath.map(p => grid[p.r][p.c]);
+            
+            if (pathSymbols.length === 0) {
+                selectionPlaceholder.classList.remove('hidden');
+                selectionNodesEl.classList.add('hidden');
+                moleculeMatchName.classList.add('hidden');
+                return;
+            }
+
+            selectionPlaceholder.classList.add('hidden');
+            selectionNodesEl.classList.remove('hidden');
+            selectionNodesEl.innerHTML = '';
+
+            pathSymbols.forEach((sym, idx) => {
+                const node = document.createElement('span');
+                const elData = ALL_ELEMENTS[sym] || ALL_ELEMENTS.H;
+                node.className = `px-1.5 py-0.5 rounded text-[11px] font-bold text-white bg-slate-800 border flex items-center gap-0.5 ${elData.borderColor}`;
+                
+                if (elData.isBenzene) {
+                    node.innerHTML = `${BENZENE_HEX_SVG_SMALL}<span>Ph</span>`;
+                } else {
+                    node.textContent = sym;
+                }
+                
+                selectionNodesEl.appendChild(node);
+
+                if (idx < pathSymbols.length - 1) {
+                    const dot = document.createElement('span');
+                    dot.className = 'text-[9px] text-slate-500';
+                    dot.textContent = '•';
+                    selectionNodesEl.appendChild(dot);
+                }
+            });
+
+            const result = checkMatchedRecipe(pathSymbols);
+            if (result) {
+                matchedRecipe = result;
+                moleculeMatchName.textContent = `+${result.recipe.score} ${result.recipe.name} (${result.recipe.formula})`;
+                moleculeMatchName.classList.remove('hidden');
+            } else {
+                matchedRecipe = null;
+                moleculeMatchName.classList.add('hidden');
+            }
+        }
+
+        function drawSVGConnections() {
+            svgEl.innerHTML = '';
+            if (selectedPath.length < 2) return;
+
+            const boardRect = boardEl.getBoundingClientRect();
+            let points = [];
+
+            selectedPath.forEach(p => {
+                const selector = `.element-node[data-row="${p.r}"][data-col="${p.c}"]`;
+                const node = boardEl.querySelector(selector);
+                if (node) {
+                    const rect = node.getBoundingClientRect();
+                    const x = rect.left + rect.width / 2 - boardRect.left;
+                    const y = rect.top + rect.height / 2 - boardRect.top;
+                    points.push(`${x},${y}`);
+                }
+            });
+
+            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polyline.setAttribute('points', points.join(' '));
+            polyline.setAttribute('fill', 'none');
+            polyline.setAttribute('stroke', matchedRecipe ? '#34d399' : '#38bdf8');
+            polyline.setAttribute('stroke-width', '5');
+            polyline.setAttribute('stroke-linecap', 'round');
+            polyline.setAttribute('stroke-linejoin', 'round');
+            polyline.setAttribute('opacity', '0.8');
+            svgEl.appendChild(polyline);
+        }
+
+        // --- Execution & Gravity ---
+        function executeMatch(matchResult) {
+            const { recipe } = matchResult;
+
+            let matchScore = recipe.score;
+            if (recipe.isNobleGasSpecial && selectedPath.length > 3) {
+                matchScore += (selectedPath.length - 3) * 100;
+            }
+
+            if (matchScore >= EXCELLENT_SCORE_THRESHOLD) {
+                sound.playExcellentSound();
+                showExcellentBanner();
+            } else {
+                sound.playMatchSound();
+            }
+
+            updateScore(score + matchScore);
+
+            const lastCell = selectedPath[selectedPath.length - 1];
+            showScorePopup(lastCell, `+${matchScore} ${recipe.name}`);
+
+            selectedPath.forEach(p => {
+                grid[p.r][p.c] = null;
+            });
+
+            applyGravityAndRefill();
+        }
+
+        function showExcellentBanner() {
+            excellentContainer.innerHTML = '';
+
+            const banner = document.createElement('div');
+            banner.className = 'excellent-banner absolute top-1/2 left-1/2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-black text-2xl tracking-wider shadow-2xl border-2 border-white flex items-center gap-2 z-50';
+            banner.innerHTML = `
+                <i class="fa-solid fa-star text-slate-950"></i>
+                <span>EXCELLENT!</span>
+                <i class="fa-solid fa-star text-slate-950"></i>
+            `;
+
+            excellentContainer.appendChild(banner);
+
+            setTimeout(() => banner.remove(), 1250);
+        }
+
+        function updateScore(newScore) {
+            score = newScore;
+            scoreDisplay.textContent = score;
+        }
+
+        function showScorePopup(cell, text) {
+            const selector = `.element-node[data-row="${cell.r}"][data-col="${cell.c}"]`;
+            const node = boardEl.querySelector(selector);
+            if (!node) return;
+
+            const rect = node.getBoundingClientRect();
+            const boardRect = boardEl.getBoundingClientRect();
+
+            const popup = document.createElement('div');
+            popup.className = 'absolute font-black text-xs text-emerald-300 bg-slate-900/90 border border-emerald-400 px-2.5 py-1 rounded-full shadow-lg pointer-events-none z-50 transition-all duration-700 transform -translate-x-1/2 -translate-y-1/2';
+            popup.style.left = `${rect.left + rect.width / 2 - boardRect.left}px`;
+            popup.style.top = `${rect.top + rect.height / 2 - boardRect.top}px`;
+            popup.textContent = text;
+
+            popupContainer.appendChild(popup);
+
+            setTimeout(() => {
+                popup.style.transform = 'translate(-50%, -100%) scale(1.1)';
+                popup.style.opacity = '0';
+            }, 50);
+
+            setTimeout(() => popup.remove(), 750);
+        }
+
+        function applyGravityAndRefill() {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                let emptyRow = GRID_SIZE - 1;
+                for (let r = GRID_SIZE - 1; r >= 0; r--) {
+                    if (grid[r][c] !== null) {
+                        grid[emptyRow][c] = grid[r][c];
+                        if (emptyRow !== r) grid[r][c] = null;
+                        emptyRow--;
+                    }
+                }
+                for (let r = emptyRow; r >= 0; r--) {
+                    grid[r][c] = getRandomElement();
+                }
+            }
+            renderBoard();
+
+            setTimeout(checkGameOverCondition, 300);
+        }
+
+        function rotateBoard(direction) {
+            if (isGameOver) return;
+            sound.playRotateSound();
+            const newGrid = [];
+            for (let r = 0; r < GRID_SIZE; r++) newGrid[r] = [];
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (direction === 'right') {
+                        newGrid[c][GRID_SIZE - 1 - r] = grid[r][c];
+                    } else {
+                        newGrid[GRID_SIZE - 1 - c][r] = grid[r][c];
+                    }
+                }
+            }
+
+            grid = newGrid;
+
+            const angle = direction === 'right' ? 90 : -90;
+            boardEl.style.transform = `rotate(${angle}deg)`;
+
+            setTimeout(() => {
+                boardEl.style.transition = 'none';
+                boardEl.style.transform = 'rotate(0deg)';
+                applyGravityAndRefill();
+                setTimeout(() => {
+                    boardEl.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                }, 50);
+            }, 300);
+        }
+
+        // --- Modals UI ---
+        function buildDifficultyModal() {
+            const container = document.getElementById('diff-options-container');
+            container.innerHTML = '';
+
+            Object.values(DIFFICULTIES).forEach(diff => {
+                const isSelected = diff.id === currentDifficultyKey;
+                const btn = document.createElement('button');
+                btn.className = `w-full p-3 rounded-xl border text-left transition flex items-center justify-between ${
+                    isSelected ? 'bg-slate-800 border-cyan-400 ring-1 ring-cyan-400' : 'bg-slate-900/60 border-slate-700 hover:bg-slate-800'
+                }`;
+
+                btn.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded border ${diff.badgeClass}">${diff.name}</span>
+                            <span class="text-xs text-slate-400 font-semibold">元素数: ${diff.elements.length}種</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">${diff.desc}</p>
+                    </div>
+                    ${isSelected ? '<i class="fa-solid fa-circle-check text-cyan-400 text-base"></i>' : ''}
+                `;
+
+                btn.addEventListener('click', () => {
+                    setDifficulty(diff.id);
+                    closeModal(document.getElementById('modal-diff'));
+                });
+
+                container.appendChild(btn);
+            });
+        }
+
+        function buildRecipeModal() {
+            const container = document.getElementById('recipe-list-container');
+            const diffConfig = DIFFICULTIES[currentDifficultyKey];
+            const isOrganicOnly = diffConfig.isOrganicOnly;
+
+            document.getElementById('recipe-current-diff').textContent = diffConfig.name;
+            
+            container.innerHTML = '';
+
+            const availableElements = diffConfig.elements;
+            let count = 0;
+
+            ALL_RECIPES.forEach(recipe => {
+                const compKeys = recipe.composition ? Object.keys(recipe.composition) : [];
+                let isPossible = recipe.isNobleGasSpecial ? 
+                    (!isOrganicOnly && (recipe.formula.includes('He') ? availableElements.includes('He') : availableElements.includes('Ne'))) :
+                    compKeys.every(k => availableElements.includes(k));
+
+                if (isOrganicOnly && !recipe.isOrganic) {
+                    isPossible = false;
+                }
+
+                if (isPossible) count++;
+
+                const item = document.createElement('div');
+                item.className = `glass-panel p-2.5 rounded-xl border flex items-center justify-between transition ${
+                    isPossible ? 'border-slate-700/70 opacity-100' : 'border-slate-800/40 opacity-40 grayscale'
+                }`;
+
+                let compHtml = '';
+                if (recipe.isNobleGasSpecial) {
+                    const sym = recipe.formula.includes('He') ? 'He' : 'Ne';
+                    compHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">${sym} × 3+</span>`;
+                } else {
+                    compHtml = Object.entries(recipe.composition).map(([sym, num]) => {
+                        const isB = sym === 'Ph';
+                        const displaySym = isB ? `${BENZENE_HEX_SVG_SMALL}Ph` : sym;
+                        return `<span class="text-xs font-bold text-slate-300 inline-flex items-center gap-0.5">${displaySym}${num > 1 ? `<sub class="text-[9px] text-cyan-400">${num}</sub>` : ''}</span>`;
+                    }).join('<span class="text-[10px] text-slate-600 mx-1">+</span>');
+                }
+
+                item.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-slate-100">${recipe.name}</span>
+                            <span class="text-xs font-semibold text-cyan-400 font-mono">${recipe.formula}</span>
+                            ${recipe.isOrganic ? '<span class="text-[9px] px-1.5 py-0.2 bg-purple-500/20 text-purple-300 rounded border border-purple-500/30">有機</span>' : ''}
+                            ${!isPossible ? '<span class="text-[9px] px-1.5 py-0.2 bg-slate-800 text-slate-500 rounded border border-slate-700">不可</span>' : ''}
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-0.5">${recipe.desc}</p>
+                        <div class="mt-1 flex items-center gap-1">${compHtml}</div>
+                    </div>
+                    <div class="text-right pl-2">
+                        <span class="text-xs font-black text-amber-400">+${recipe.score}</span>
+                        ${recipe.score >= EXCELLENT_SCORE_THRESHOLD ? '<div class="text-[8px] font-bold text-amber-300 bg-amber-500/20 px-1 py-0.2 rounded border border-amber-400/30 mt-0.5">EXCELLENT</div>' : ''}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+
+            document.getElementById('recipe-count-badge').textContent = `作成可能: ${count} / ${ALL_RECIPES.length} 種`;
+        }
+
+        function openModal(modalEl) {
+            modalEl.classList.remove('hidden');
+            setTimeout(() => modalEl.classList.remove('opacity-0'), 10);
+        }
+
+        function closeModal(modalEl) {
+            modalEl.classList.add('opacity-0');
+            setTimeout(() => modalEl.classList.add('hidden'), 200);
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('pointerdown', handlePointerDown);
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+
+        document.getElementById('btn-rotate-left').addEventListener('click', () => rotateBoard('left'));
+        document.getElementById('btn-rotate-right').addEventListener('click', () => rotateBoard('right'));
+        btnShuffle.addEventListener('click', shuffleBoard);
+        btnHint.addEventListener('click', triggerHint);
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            if (confirm('盤面をリセットしますか？')) initGame();
+        });
+        document.getElementById('btn-restart-gameover').addEventListener('click', () => {
+            initGame();
+        });
+
+        // Modals Controls
+        btnChangeDiff.addEventListener('click', () => {
+            buildDifficultyModal();
+            openModal(document.getElementById('modal-diff'));
+        });
+        document.getElementById('btn-close-diff').addEventListener('click', () => closeModal(document.getElementById('modal-diff')));
+
+        document.getElementById('btn-recipes').addEventListener('click', () => {
+            buildRecipeModal();
+            openModal(document.getElementById('modal-recipes'));
+        });
+        document.getElementById('btn-close-recipes').addEventListener('click', () => closeModal(document.getElementById('modal-recipes')));
+
+        window.addEventListener('resize', drawSVGConnections);
+
+        // --- Initialize Default (NORMAL) Mode ---
+        setDifficulty('normal');
+    </script>
+</body>
+</html>
