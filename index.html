@@ -501,57 +501,61 @@
 
     <!-- Game Script -->
     <script>
-        const GRID_SIZE = 6;
-        const EXCELLENT_SCORE_THRESHOLD = 400;
 
-        // SVG Helper for Benzene Regular Hexagon
-        const BENZENE_HEX_SVG = `
-            <svg class="w-5 h-5 stroke-current fill-none my-0.5" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12,2 20.66,7 20.66,17 12,22 3.34,17 3.34,7" />
-                <circle cx="12" cy="12" r="4.5" stroke-width="1.6" />
-            </svg>
-        `;
-
-        const BENZENE_HEX_SVG_SMALL = `
-            <svg class="w-3.5 h-3.5 stroke-current fill-none inline-block align-middle" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12,2 20.66,7 20.66,17 12,22 3.34,17 3.34,7" />
-                <circle cx="12" cy="12" r="4.5" stroke-width="1.6" />
-            </svg>
-        `;
-
-        // --- All 24 Elements Definition ---
+const GRID_SIZE = 6;
+const EXCELLENT_SCORE_THRESHOLD = 400; 	
+	
+// SVG Helper for Benzene Regular Hexagon 	
+const BENZENE_HEX_SVG = ` 	
+<svg class="w-5 h-5 stroke-current fill-none my-0.5" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"> 	
+<polygon points="12,2 20.66,7 20.66,17 12,22 3.34,17 3.34,7" /> 	
+<circle cx="12" cy="12" r="4.5" stroke-width="1.6" /> 	
+</svg> 	
+`; 	
+	
+const BENZENE_HEX_SVG_SMALL = ` 	
+<svg class="w-3.5 h-3.5 stroke-current fill-none inline-block align-middle" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"> 	
+<polygon points="12,2 20.66,7 20.66,17 12,22 3.34,17 3.34,7" /> 	
+<circle cx="12" cy="12" r="4.5" stroke-width="1.6" /> 	
+</svg> 	
+`;
+        // --- All 27 Elements Definition ---
         const ALL_ELEMENTS = {
-            H: { symbol: 'H', name: '水素', color: 'from-blue-500 to-cyan-400', textColor: 'text-white', borderColor: 'border-cyan-300' },
-            C: { symbol: 'C', name: '炭素', color: 'from-slate-700 to-slate-900', textColor: 'text-white', borderColor: 'border-slate-500' },
-            O: { symbol: 'O', name: '酸素', color: 'from-red-500 to-rose-600', textColor: 'text-white', borderColor: 'border-red-400' },
-            N: { symbol: 'N', name: '窒素', color: 'from-indigo-600 to-blue-700', textColor: 'text-white', borderColor: 'border-indigo-400' },
-            F: { symbol: 'F', name: 'フッ素', color: 'from-emerald-400 to-teal-500', textColor: 'text-slate-950', borderColor: 'border-emerald-300' },
-            S: { symbol: 'S', name: '硫黄', color: 'from-amber-400 to-yellow-500', textColor: 'text-slate-950', borderColor: 'border-amber-300' },
-            Cl: { symbol: 'Cl', name: '塩素', color: 'from-lime-500 to-green-600', textColor: 'text-white', borderColor: 'border-lime-300' },
-            Cu: { symbol: 'Cu', name: '銅', color: 'from-orange-600 to-amber-700', textColor: 'text-white', borderColor: 'border-orange-400' },
-            Hg: { symbol: 'Hg', name: '水銀', color: 'from-slate-300 to-slate-400', textColor: 'text-slate-900', borderColor: 'border-white' },
+            H: { symbol: 'H', name: '水素', valence: 1, color: 'from-blue-500 to-cyan-400', textColor: 'text-white', borderColor: 'border-cyan-300' },
+            C: { symbol: 'C', name: '炭素', valence: 4, color: 'from-slate-700 to-slate-900', textColor: 'text-white', borderColor: 'border-slate-500' },
+            O: { symbol: 'O', name: '酸素', valence: 6, color: 'from-red-500 to-rose-600', textColor: 'text-white', borderColor: 'border-red-400' },
+            N: { symbol: 'N', name: '窒素', valence: 5, color: 'from-indigo-600 to-blue-700', textColor: 'text-white', borderColor: 'border-indigo-400' },
+            F: { symbol: 'F', name: 'フッ素', valence: 7, color: 'from-emerald-400 to-teal-500', textColor: 'text-slate-950', borderColor: 'border-emerald-300' },
+            S: { symbol: 'S', name: '硫黄', valence: 6, color: 'from-amber-400 to-yellow-500', textColor: 'text-slate-950', borderColor: 'border-amber-300' },
+            Cl: { symbol: 'Cl', name: '塩素', valence: 7, color: 'from-lime-500 to-green-600', textColor: 'text-white', borderColor: 'border-lime-300' },
+            Cu: { symbol: 'Cu', name: '銅', valence: 1, color: 'from-orange-600 to-amber-700', textColor: 'text-white', borderColor: 'border-orange-400' },
+            Hg: { symbol: 'Hg', name: '水銀', valence: 2, color: 'from-slate-300 to-slate-400', textColor: 'text-slate-900', borderColor: 'border-white' },
             
             // Noble Gases (Rare Specials for Bomb Trigger)
-            He: { symbol: 'He', name: 'ヘリウム', color: 'from-pink-500 to-rose-500', textColor: 'text-white', borderColor: 'border-pink-300', isNoble: true },
-            Ne: { symbol: 'Ne', name: 'ネオン', color: 'from-fuchsia-500 to-purple-600', textColor: 'text-white', borderColor: 'border-fuchsia-300', isNoble: true },
+            He: { symbol: 'He', name: 'ヘリウム', valence: 0, color: 'from-pink-500 to-rose-500', textColor: 'text-white', borderColor: 'border-pink-300', isNoble: true },
+            Ne: { symbol: 'Ne', name: 'ネオン', valence: 0, color: 'from-fuchsia-500 to-purple-600', textColor: 'text-white', borderColor: 'border-fuchsia-300', isNoble: true },
             
-            COOH: { symbol: 'COOH', name: 'カルボン基', color: 'from-purple-600 to-violet-700', textColor: 'text-white', borderColor: 'border-purple-300' },
-            Ph: { symbol: 'Ph', name: 'ベンゼン環', color: 'from-amber-400 to-yellow-500', textColor: 'text-slate-950', borderColor: 'border-amber-200', isBenzene: true },
-            Mn: { symbol: 'Mn', name: 'マンガン', color: 'from-purple-900 to-indigo-950', textColor: 'text-purple-200', borderColor: 'border-purple-400' },
-            Ca: { symbol: 'Ca', name: 'カルシウム', color: 'from-amber-200 to-orange-300', textColor: 'text-slate-900', borderColor: 'border-amber-400' },
-            Ag: { symbol: 'Ag', name: '銀', color: 'from-slate-200 to-zinc-400', textColor: 'text-slate-900', borderColor: 'border-cyan-100' },
-            Li: { symbol: 'Li', name: 'リチウム', color: 'from-rose-500 to-pink-600', textColor: 'text-white', borderColor: 'border-pink-300' },
-            B:  { symbol: 'B',  name: 'ホウ素', color: 'from-stone-600 to-amber-900', textColor: 'text-amber-100', borderColor: 'border-amber-600' },
-            Zn: { symbol: 'Zn', name: '亜鉛', color: 'from-teal-600 to-slate-700', textColor: 'text-white', borderColor: 'border-teal-300' },
-            Au: { symbol: 'Au', name: '金', color: 'from-yellow-300 to-amber-500', textColor: 'text-slate-900', borderColor: 'border-yellow-100' },
-            P:  { symbol: 'P',  name: 'リン', color: 'from-orange-700 to-red-900', textColor: 'text-orange-200', borderColor: 'border-orange-500' },
-            Si: { symbol: 'Si', name: 'ケイ素', color: 'from-sky-700 to-cyan-900', textColor: 'text-sky-200', borderColor: 'border-sky-400' },
-            Al: { symbol: 'Al', name: 'アルミニウム', color: 'from-zinc-300 to-slate-500', textColor: 'text-slate-950', borderColor: 'border-zinc-200' },
-            Mg: { symbol: 'Mg', name: 'マグネシウム', color: 'from-emerald-600 to-green-800', textColor: 'text-white', borderColor: 'border-emerald-300' }
+            COOH: { symbol: 'COOH', name: 'カルボン基', valence: 1, color: 'from-purple-600 to-violet-700', textColor: 'text-white', borderColor: 'border-purple-300' },
+            Ph: { symbol: 'Ph', name: 'ベンゼン環', valence: 1, color: 'from-amber-400 to-yellow-500', textColor: 'text-slate-950', borderColor: 'border-amber-200', isBenzene: true },
+            Mn: { symbol: 'Mn', name: 'マンガン', valence: 2, color: 'from-purple-900 to-indigo-950', textColor: 'text-purple-200', borderColor: 'border-purple-400' },
+            Ca: { symbol: 'Ca', name: 'カルシウム', valence: 2, color: 'from-amber-200 to-orange-300', textColor: 'text-slate-900', borderColor: 'border-amber-400' },
+            Ag: { symbol: 'Ag', name: '銀', valence: 1, color: 'from-slate-200 to-zinc-400', textColor: 'text-slate-900', borderColor: 'border-cyan-100' },
+            Li: { symbol: 'Li', name: 'リチウム', valence: 1, color: 'from-rose-500 to-pink-600', textColor: 'text-white', borderColor: 'border-pink-300' },
+            B:  { symbol: 'B',  name: 'ホウ素', valence: 3, color: 'from-stone-600 to-amber-900', textColor: 'text-amber-100', borderColor: 'border-amber-600' },
+            Zn: { symbol: 'Zn', name: '亜鉛', valence: 2, color: 'from-teal-600 to-slate-700', textColor: 'text-white', borderColor: 'border-teal-300' },
+            Au: { symbol: 'Au', name: '金', valence: 1, color: 'from-yellow-300 to-amber-500', textColor: 'text-slate-900', borderColor: 'border-yellow-100' },
+            P:  { symbol: 'P',  name: 'リン', valence: 5, color: 'from-orange-700 to-red-900', textColor: 'text-orange-200', borderColor: 'border-orange-500' },
+            Si: { symbol: 'Si', name: 'ケイ素', valence: 4, color: 'from-sky-700 to-cyan-900', textColor: 'text-sky-200', borderColor: 'border-sky-400' },
+            Al: { symbol: 'Al', name: 'アルミニウム', valence: 3, color: 'from-zinc-300 to-slate-500', textColor: 'text-slate-950', borderColor: 'border-zinc-200' },
+            Mg: { symbol: 'Mg', name: 'マグネシウム', valence: 2, color: 'from-emerald-600 to-green-800', textColor: 'text-white', borderColor: 'border-emerald-300' },
+            
+            // Newly Added Elements
+            Na: { symbol: 'Na', name: 'ナトリウム', valence: 1, color: 'from-yellow-400 to-amber-600', textColor: 'text-slate-950', borderColor: 'border-yellow-300' },
+            Fe: { symbol: 'Fe', name: '鉄', valence: 2, color: 'from-stone-500 to-zinc-700', textColor: 'text-white', borderColor: 'border-stone-400' },
+            K:  { symbol: 'K',  name: 'カリウム', valence: 1, color: 'from-violet-500 to-purple-700', textColor: 'text-white', borderColor: 'border-violet-300' }
         };
 
         // --- Difficulties / Modes Definition ---
-        // Noble gas weights adjusted to be rare (0.2 - 0.35)
         const DIFFICULTIES = {
             easy: {
                 id: 'easy',
@@ -565,34 +569,34 @@
                 id: 'normal',
                 name: 'NORMAL',
                 badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
-                desc: '標準12種類。ベンゼン環（Ph）や希ガスボムも完備！',
-                elements: ['H', 'O', 'C', 'N', 'F', 'S', 'Cl', 'Cu', 'Hg', 'He', 'COOH', 'Ph'],
-                weights: { H: 6, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.3, COOH: 1, Ph: 1.2 }
+                desc: '標準的な難易度。ベンゼン環（Ph）や希ガスボムも完備！',
+                elements: ['H', 'O', 'C', 'N', 'F', 'S', 'Cl', 'Cu', 'Hg', 'He', 'COOH', 'Ph', 'Na'],
+                weights: { H: 6, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.3, COOH: 1, Ph: 1.2, Na: 1.2 }
             },
             organic: {
                 id: 'organic',
                 name: 'ORGANIC (有機縛り)',
                 badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
                 desc: '【上級】有機化合物のみ合成可能！無機物・ボム不可。',
-                elements: ['H', 'C', 'O', 'N', 'Cl', 'F', 'COOH', 'Ph'],
+                elements: ['H', 'C', 'O', 'N', 'Cl', 'F', 'COOH', 'Ph', 'Na'],
                 isOrganicOnly: true,
-                weights: { H: 6, C: 5, O: 4, N: 3, Cl: 2, F: 1.5, COOH: 2, Ph: 2 }
+                weights: { H: 6, C: 5, O: 4, N: 3, Cl: 2, F: 1.5, COOH: 2, Ph: 2, Na: 1 }
             },
             hard: {
                 id: 'hard',
                 name: 'HARD',
                 badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-                desc: '19種類登場。ケイ素・アルミ・Neボム等も追加！',
-                elements: ['H', 'O', 'C', 'N', 'F', 'S', 'Cl', 'Cu', 'Hg', 'He', 'COOH', 'Ph', 'Ca', 'Ag', 'Li', 'Zn', 'Ne', 'Si', 'Al', 'Mg'],
-                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.25, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 0.25, Si: 1.2, Al: 1.2, Mg: 1.2 }
+                desc: 'Na・Fe・Kなどの金属塩・鉱物元素を追加！',
+                elements: ['H', 'O', 'C', 'N', 'F', 'S', 'Cl', 'Cu', 'Hg', 'He', 'COOH', 'Ph', 'Ca', 'Ag', 'Li', 'Zn', 'Ne', 'Si', 'Al', 'Mg', 'Na', 'Fe', 'K'],
+                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.25, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 0.25, Si: 1.2, Al: 1.2, Mg: 1.2, Na: 1.5, Fe: 1.2, K: 1.2 }
             },
             expert: {
                 id: 'expert',
                 name: 'EXPERT',
                 badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-                desc: '全24種類が勢揃い！激レア希ガスボムを狙え。',
+                desc: '全27種類が勢揃い！難関分子コンボを狙え。',
                 elements: Object.keys(ALL_ELEMENTS),
-                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.25, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 0.25, Mn: 1, B: 1, Au: 0.8, P: 1, Si: 1, Al: 1, Mg: 1 }
+                weights: { H: 5, O: 4, C: 3, N: 2, F: 1.5, S: 1.5, Cl: 2, Cu: 1, Hg: 1, He: 0.25, COOH: 1, Ph: 1.2, Ca: 1.5, Ag: 1, Li: 1.5, Zn: 1, Ne: 0.25, Mn: 1, B: 1, Au: 0.8, P: 1, Si: 1, Al: 1, Mg: 1, Na: 1.5, Fe: 1.2, K: 1.2 }
             }
         };
 
@@ -606,19 +610,33 @@
 
             // Standard Organic Compounds
             { name: 'メタン', formula: 'CH₄', composition: { C: 1, H: 4 }, score: 300, desc: '最も単純なアルカン（有機化合物）', isOrganic: true },
+            { name: 'ジクロロメタン', formula: 'CH₂Cl₂', composition: { C: 1, H: 2, Cl: 2 }, score: 350, desc: '塗料剥離剤や抽出溶媒に用いられる有機塩素化合物', isOrganic: true },
+            { name: 'クロロメタン', formula: 'CH₃Cl', composition: { C: 1, H: 3, Cl: 1 }, score: 350, desc: 'エーテル様の甘い臭気があり、非常に引火性が高い', isOrganic: true },
+            { name: 'フルオロメタン', formula: 'CH₃F', composition: { C: 1, H: 3, F: 1 }, score: 350, desc: '可燃性の高圧ガスで、半導体工業のケイ素表面エッチングなどに使用される', isOrganic: true },
+            { name: 'テトラクロロメタン', formula: 'CCl₄', composition: { C: 1, Cl: 4 }, score: 400, desc: '四塩化炭素。かつて溶剤や消火剤に使われた化合物', isOrganic: true },
             { name: 'エチレン', formula: 'C₂H₄', composition: { C: 2, H: 4 }, score: 320, desc: '最も単純なアルケン。植物の熟成ホルモン', isOrganic: true },
+            { name: 'プロパン', formula: 'C₃H₈', composition: { C: 3, H: 8 }, score: 550, desc: 'LPガスの主成分', isOrganic: true },
             { name: 'メチルアルコール', formula: 'CH₃OH', composition: { C: 1, H: 4, O: 1 }, score: 350, desc: 'メタノール。最も単純なアルコール', isOrganic: true },
             { name: 'エチルアルコール', formula: 'C₂H₅OH', composition: { C: 2, H: 6, O: 1 }, score: 450, desc: 'エタノール。お酒や消毒液の主成分', isOrganic: true },
+            { name: 'プロパノール', formula: 'C₃H₇OH', composition: { C: 3, H: 8, O: 1 }, score: 450, desc: '薬や化粧品、消毒液を作る時の溶剤として使われる', isOrganic: true },
             { name: 'グルコース', formula: 'C₆H₁₂O₆', composition: { C: 6, H: 12, O: 6 }, score: 850, desc: 'ブドウ糖。生物の主要なエネルギー源', isOrganic: true },
 
             { name: 'ギ酸', formula: 'HCOOH', composition: { H: 1, COOH: 1 }, score: 350, desc: '蟻の毒成分でもある有機酸', isOrganic: true },
             { name: 'ギ酸(分解連鎖)', formula: 'HCOOH', composition: { C: 1, O: 2, H: 2 }, score: 380, desc: 'C, O, O, Hをつなげたギ酸合成', isOrganic: true },
             { name: '酢酸', formula: 'CH₃COOH', composition: { C: 1, H: 3, COOH: 1 }, score: 500, desc: 'お酢の主成分', isOrganic: true },
             { name: '酢酸(分解連鎖)', formula: 'CH₃COOH', composition: { C: 2, O: 2, H: 4 }, score: 550, desc: 'C2, O2, H4をつなげた酢酸合成', isOrganic: true },
+            { name: '酢酸ナトリウム', formula: 'CH₃COONa', composition: { C: 1, H: 3, COOH: 1, Na: 1 }, score: 580, desc: 'エコカイロ（過冷却利用）などに使われる有機酸塩', isOrganic: true },
+            { name: '酢酸ナトリウム(Ptn2)', formula: 'CH₃COONa', composition: { C: 1, H: 2, COOH: 1, Na: 1 }, score: 580, desc: 'エコカイロ（過冷却利用）などに使われる有機酸塩', isOrganic: true },
+            { name: '酢酸ナトリウム(Ptn3)', formula: 'CH₃COONa', composition: { C: 2, H: 3, O: 2, Na: 1 }, score: 580, desc: 'エコカイロ（過冷却利用）などに使われる有機酸塩', isOrganic: true },
+            { name: 'シュウ酸', formula: 'C₂H₂O₄', composition: { COOH: 2 }, score: 600, desc: 'ほうれん草にふくまれるえぐみ成分', isOrganic: true },
+            { name: 'シュウ酸(分解連鎖)', formula: 'C₂H₂O₄', composition: { C: 2, O: 4, H: 2 }, score: 600, desc: 'ほうれん草にふくまれるえぐみ成分', isOrganic: true },
+            { name: 'シュウ酸(分解連鎖②)', formula: 'C₂H₂O₄', composition: { C: 1, O: 2, H: 1, COOH: 1 }, score: 600, desc: 'ほうれん草にふくまれるえぐみ成分', isOrganic: true },
 
             // Benzene / Aromatic Ring Organic Recipes
             { name: 'ベンゼン', formula: 'C₆H₆', composition: { Ph: 1, H: 1 }, score: 300, desc: '代表的な芳香族炭化水素', isOrganic: true },
+            { name: 'ナフタレン', formula: 'C₁₀H₈', composition: { Ph: 2 }, score: 600, desc: '防虫剤の匂いでお馴染みの2環芳香族炭化水素', isOrganic: true },
             { name: 'フェノール', formula: 'C₆H₅OH', composition: { Ph: 1, O: 1, H: 1 }, score: 400, desc: '消毒薬・プラスチック原料', isOrganic: true },
+            { name: 'フェニルアミン', formula: 'C₆H₅NH₂', composition: { Ph: 1, H: 1 }, score: 300, desc: 'アニリン。毒性を持ち、刺激臭のする無臭の液体', isOrganic: true },
             { name: '安息香酸', formula: 'C₆H₅COOH', composition: { Ph: 1, COOH: 1 }, score: 450, desc: '保存料として使われる芳香族カルボン酸', isOrganic: true },
             { name: '安息香酸(分解連鎖)', formula: 'C₆H₅COOH', composition: { Ph: 1, C: 1, O: 2, H: 1 }, score: 500, desc: 'Ph + C + O + O + H による合成', isOrganic: true },
             { name: 'トルエン', formula: 'C₆H₅CH₃', composition: { Ph: 1, C: 1, H: 3 }, score: 450, desc: 'シンナー等の有機溶剤成分', isOrganic: true },
@@ -626,26 +644,52 @@
 
             { name: 'パラジクロロベンゼン', formula: 'C₆H₄Cl₂', composition: { Ph: 1, Cl: 2 }, score: 420, desc: '防虫剤や芳香剤に使われる有機塩素化合物', isOrganic: true },
             { name: 'サリチル酸', formula: 'C₇H₆O₃', composition: { Ph: 1, COOH: 1, O: 1, H: 1 }, score: 550, desc: '消炎鎮痛剤や角質軟化薬の原料', isOrganic: true },
+            { name: 'サリチル酸(分解連鎖)', formula: 'C₇H₆O₃', composition: { Ph: 1, C: 1, O: 3, H: 2 }, score: 550, desc: '消炎鎮痛剤や角質軟化薬の原料', isOrganic: true },
             { name: 'アセチルサリチル酸', formula: 'C₉H₈O₄', composition: { Ph: 1, COOH: 1, C: 1, O: 1, H: 3 }, score: 680, desc: 'アスピリンとして有名な世界初の合成解熱鎮痛薬', isOrganic: true },
+            { name: 'フルオロベンゼン', formula: 'C₆H₆F', composition: { Ph: 1, F: 1 }, score: 300, desc: 'ベンゼンと比べて大幅に低い融点（−44℃）が特徴', isOrganic: true },
 
             // Standard Inorganic Compounds
             { name: '水', formula: 'H₂O', composition: { H: 2, O: 1 }, score: 150, desc: '生命に不可欠な無機化合物', isOrganic: false },
             { name: '過酸化水素', formula: 'H₂O₂', composition: { H: 2, O: 2 }, score: 250, desc: '強力な酸化剤・消毒液', isOrganic: false },
             { name: '二酸化炭素', formula: 'CO₂', composition: { C: 1, O: 2 }, score: 200, desc: '光合成や呼気に関わる気体', isOrganic: false },
             { name: '一酸化炭素', formula: 'CO', composition: { C: 1, O: 1 }, score: 120, desc: '無色無臭の有毒ガス', isOrganic: false },
+            { name: '一酸化窒素', formula: 'NO', composition: { N: 1, O: 1 }, score: 120, desc: '血管拡張作用やシグナル伝達物質として働く無色気体', isOrganic: false },
+            { name: '二酸化窒素', formula: 'NO₂', composition: { N: 1, O: 2 }, score: 200, desc: '赤褐色の有毒で強い刺激臭を持つ大気汚染気体', isOrganic: false },
+            { name: '硝酸', formula: 'HNO₃', composition: { H: 1, N: 1, O: 3 }, score: 380, desc: '強酸性を示す代表的な無機酸・強力な酸化剤', isOrganic: false },
             { name: 'アンモニア', formula: 'NH₃', composition: { N: 1, H: 3 }, score: 250, desc: '刺激臭を持つ気体', isOrganic: false },
+            { name: '亜硝酸アンモニウム', formula: 'NH₄NO₂', composition: { N: 2, H: 4, O: 2 }, score: 550, desc: '加熱により高純度の窒素ガスを発生する無機塩', isOrganic: false },
             { name: '塩化水素', formula: 'HCl', composition: { H: 1, Cl: 1 }, score: 100, desc: '水溶液は塩酸になる', isOrganic: false },
             { name: 'フッ化水素', formula: 'HF', composition: { H: 1, F: 1 }, score: 120, desc: 'ガラスを侵食する強酸', isOrganic: false },
+            { name: 'フッ化窒素', formula: 'NF₃', composition: { H: 1, F: 3 }, score: 200, desc: '半導体の製造工程などで洗浄ガスで使われる', isOrganic: false },
+            { name: 'フッ化ナトリウム', formula: 'NaF', composition: { Na: 1, F: 1 }, score: 180, desc: '虫歯予防のフッ素加工などに用いられる無機塩', isOrganic: false },
+            { name: 'フッ化カルシウム', formula: 'CaF₂', composition: { Ca: 1, F: 2 }, score: 250, desc: '蛍石（フローライト）の主成分', isOrganic: false },
+            { name: '窒化銅', formula: 'Cu₃N', composition: { Cu: 3, N: 1 }, score: 250, desc: '半導体としての性質を持つ', isOrganic: false },
+            { name: 'フッ化銅', formula: 'CuF₂', composition: { Cu: 1, F: 2 }, score: 250, desc: '無水物は吸湿性が強く、空気中の湿気で青に変色する', isOrganic: false },
             { name: '硫化水素', formula: 'H₂S', composition: { H: 2, S: 1 }, score: 200, desc: '温泉特有の硫黄臭の気体', isOrganic: false },
             { name: '二酸化硫黄', formula: 'SO₂', composition: { S: 1, O: 2 }, score: 220, desc: '刺激臭のある火山ガス成分', isOrganic: false },
+            { name: '三酸化硫黄', formula: 'SO₃', composition: { S: 1, O: 3 }, score: 300, desc: '硫酸の工業生産プロセスで用いられる酸化物', isOrganic: false },
+            { name: '二硫化炭素', formula: 'CS₂', composition: { C: 1, S: 2 }, score: 300, desc: '無色で揮発性の高い液体で、特有の臭気を持つ', isOrganic: false },
+            { name: '硫化カルボニル', formula: 'COS', composition: { C: 1, S: 1, O: 1 }, score: 450, desc: '常温で無色の気体で、大気中に最も多く存在する硫黄化合物の一つ', isOrganic: false },
+            { name: '硫酸', formula: 'H₂SO₄', composition: { H: 2, S: 1, O: 4 }, score: 500, desc: '工業的に極めて重要で脱水作用を持つ代表的強酸', isOrganic: false },
+            { name: '硫化水銀', formula: 'HgS', composition: { Hg: 1, S: 1 }, score: 220, desc: '朱色の天然顔料（辰砂）の主成分', isOrganic: false },
             { name: '酸化銅', formula: 'CuO', composition: { Cu: 1, O: 1 }, score: 180, desc: '黒色の金属酸化物', isOrganic: false },
+            { name: '炭化ケイ素', formula: 'SiC', composition: { Si: 1, C: 1 }, score: 220, desc: 'ダイヤモンドに匹敵する硬度を持つ、優れた耐熱・半導体材料', isOrganic: false },
 
             // Inorganic Metallic / Minerals
+            { name: '水酸化カルシウム', formula: 'Ca(OH)₂', composition: { Ca: 1, O: 2, H: 2 }, score: 380, desc: '消石灰。水溶液は強塩基性の石灰水', isOrganic: false },
+            { name: '水酸化ナトリウム', formula: 'NaOH', composition: { Na: 1, O: 1, H: 1 }, score: 380, desc: '別名「苛性ソーダ」とも呼ばれる重要な基礎化学品', isOrganic: false },
             { name: '二酸化ケイ素', formula: 'SiO₂', composition: { Si: 1, O: 2 }, score: 220, desc: '石英や水晶、ガラスの主成分', isOrganic: false },
             { name: '酸化アルミニウム', formula: 'Al₂O₃', composition: { Al: 2, O: 3 }, score: 380, desc: 'アルミナ。ルビーやサファイアの主成分', isOrganic: false },
+            { name: '酸化ナトリウム', formula: 'Na₂O', composition: { Na: 2, O: 1 }, score: 300, desc: '水と激しく反応して水酸化ナトリウムを生成する', isOrganic: false }, 
             { name: '酸化マグネシウム', formula: 'MgO', composition: { Mg: 1, O: 1 }, score: 160, desc: '耐火レンガや胃腸薬に使われる', isOrganic: false },
+            { name: '二酸化マンガン', formula: 'MnO₂', composition: { Mn: 1, O: 2 }, score: 220, desc: '乾電池の材料としてよく知られる', isOrganic: false },
             { name: '生石灰(酸化カルシウム)', formula: 'CaO', composition: { Ca: 1, O: 1 }, score: 160, desc: '乾燥剤として使われる白色固形物', isOrganic: false },
             { name: '塩化銀', formula: 'AgCl', composition: { Ag: 1, Cl: 1 }, score: 180, desc: '感光性を持つ白色沈殿', isOrganic: false },
+            { name: '塩化ナトリウム', formula: 'NaCl', composition: { Na: 1, Cl: 1 }, score: 160, desc: '塩。食べられる塩（えん）だから食塩！', isOrganic: false },
+            { name: '塩化マグネシウム', formula: 'MgCl₂', composition: { Mg: 1, Cl: 2 }, score: 180, desc: 'にがりの主成分', isOrganic: false },
+            { name: '塩化カルシウム', formula: 'CaCl₂', composition: { Ca: 1, Cl: 2 }, score: 180, desc: '融雪剤でつかわれる', isOrganic: false },
+            { name: '塩化水銀', formula: 'HgCl₂', composition: { Hg: 1, Cl: 2 }, score: 180, desc: '非常に強い毒性をもつ化合物。', isOrganic: false },
+            { name: '塩化銅', formula: 'CuCl₂', composition: { Cu: 1, Cl: 2 }, score: 180, desc: '水によく溶けて青緑色の水溶液を生成する', isOrganic: false },
             { name: '塩化リチウム', formula: 'LiCl', composition: { Li: 1, Cl: 1 }, score: 160, desc: '炎色反応で美しい赤色を示す', isOrganic: false },
             { name: '酸化亜鉛', formula: 'ZnO', composition: { Zn: 1, O: 1 }, score: 180, desc: '日焼け止めなどに使われる白色顔料', isOrganic: false },
 
@@ -889,6 +933,7 @@
         function showHintBanner(recipe) {
             if (!hintBannerContainer) return;
             hintBannerContainer.innerHTML = '';
+        }
 
         function showHintInSelectionBar(recipe) {
             const hintTextEl = document.getElementById('hint-display-text');
@@ -958,7 +1003,7 @@
                 }, 4500);
 
             } else {
-                alert('現在消せる組み合わせが見つかりません！回転またはシャッフルを試してください。');
+                showScorePopup({r: 2, c: 2}, '消せる組み合わせがありません！回転/シャッフルを試してください');
             }
 
             startHintCooldown();
@@ -1099,23 +1144,28 @@
                     const node = document.createElement('div');
                     node.dataset.row = r;
                     node.dataset.col = c;
-                    node.className = `element-node relative flex flex-col items-center justify-center rounded-xl font-extrabold shadow-md border-2 ${elData.borderColor} bg-gradient-to-br ${elData.color} ${elData.textColor} pop-in`;
+                    node.className = `element-node relative flex flex-col items-center justify-center rounded-xl font-extrabold shadow-md border-2 ${elData.borderColor} bg-gradient-to-br ${elData.color} ${elData.textColor} pop-in py-1`;
                     
+                    const valenceDisplay = `[${elData.valence ?? 0}]`;
+
                     if (elData.isBenzene) {
                         node.innerHTML = `
                             ${BENZENE_HEX_SVG}
-                            <span class="text-[9px] opacity-90 font-bold leading-none">${elData.name}</span>
+                            <span class="text-[8px] opacity-90 font-bold leading-none mt-0.5">${elData.name}</span>
+                            <span class="text-[8px] opacity-80 font-mono font-bold leading-none mt-0.5">${valenceDisplay}</span>
                         `;
                     } else if (elData.isNoble) {
                         node.innerHTML = `
-                            <span class="text-sm leading-none tracking-tight font-black flex items-center gap-0.5">${symbol} <i class="fa-solid fa-burst text-[10px] text-amber-300"></i></span>
+                            <span class="text-xs leading-none tracking-tight font-black flex items-center gap-0.5">${symbol} <i class="fa-solid fa-burst text-[8px] text-amber-300"></i></span>
                             <span class="text-[8px] opacity-90 font-bold leading-none mt-0.5">${elData.name}</span>
+                            <span class="text-[8px] opacity-80 font-mono font-bold leading-none mt-0.5">${valenceDisplay}</span>
                         `;
                     } else {
-                        const symbolSize = symbol.length > 3 ? 'text-[10px]' : (symbol.length > 2 ? 'text-xs' : (symbol.length > 1 ? 'text-sm' : 'text-lg'));
+                        const symbolSize = symbol.length > 3 ? 'text-[10px]' : (symbol.length > 2 ? 'text-xs' : 'text-sm');
                         node.innerHTML = `
                             <span class="${symbolSize} leading-none tracking-tight">${symbol}</span>
-                            <span class="text-[9px] opacity-80 font-normal leading-none mt-0.5">${elData.name}</span>
+                            <span class="text-[8px] opacity-80 font-normal leading-none mt-0.5">${elData.name}</span>
+                            <span class="text-[8px] opacity-80 font-mono font-bold leading-none mt-0.5">${valenceDisplay}</span>
                         `;
                     }
 
@@ -1711,7 +1761,7 @@
         btnShuffle.addEventListener('click', shuffleBoard);
         btnHint.addEventListener('click', triggerHint);
         document.getElementById('btn-reset').addEventListener('click', () => {
-            if (confirm('盤面をリセットしますか？')) initGame();
+            initGame();
         });
         document.getElementById('btn-restart-gameover').addEventListener('click', () => {
             initGame();
