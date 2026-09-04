@@ -940,6 +940,27 @@ const BENZENE_HEX_SVG_SMALL = `
   { name: 'トリフェニルシラノール', formula: 'Ph₃SiOH', composition: { Ph: 3, Si: 1, O: 1, H: 1 }, score: 650, desc: '結晶性の高い有色金属錯体の配位子や有機シリコン化合物', isOrganic: true },
   { name: 'フッ化三塩化ケイ素', formula: 'SiCl₃F', composition: { Si: 1, Cl: 3, F: 1 }, score: 400, desc: '混合ハロゲン化ケイ素で特殊エッチング・合成中間体', isOrganic: false },
 
+			// --- 金属間化合物 (Intermetallic Compounds) (20種) ---
+  { name: 'チタンアルミナイド', formula: 'TiAl', composition: { Ti: 1, Al: 1 }, score: 500, desc: '軽量かつ高温強度に優れ、航空機エンジンやターボチャージャーに利用される', isOrganic: false },
+  { name: 'ニッケルアルミナイド', formula: 'Ni₃Al', composition: { Ni: 3, Al: 1 }, score: 520, desc: '高温で強度が上がる逆温度依存性を持ち、ジェットエンジンの耐熱部材に使われる', isOrganic: false },
+  { name: 'ニッケルチタン(ニチノール)', formula: 'NiTi', composition: { Ni: 1, Ti: 1 }, score: 480, desc: '代表的な形状記憶合金および超弾性材料として医療用カテーテル等に使用される', isOrganic: false },
+  { name: 'ニッケルジニッケル化ニオブ', formula: 'Nb₃Sn', composition: { Nb: 3, Sn: 1 }, score: 550, desc: '強磁場を発生させる金属系超伝導マグネット用線材の主成分', isOrganic: false },
+  { name: 'ニオブチタン', formula: 'NbTi', composition: { Nb: 1, Ti: 1 }, score: 500, desc: 'MRIやリニアモーターカーなどの超伝導電磁石として最も広く実用化されている', isOrganic: false },
+  { name: 'ネオジム磁石化合物', formula: 'Nd₂Fe₁₄B', composition: { Nd: 2, Fe: 14, B: 1 }, score: 800, desc: '現代の工業製品で最強の磁力を持つ永久磁石化合物', isOrganic: false },
+  { name: 'サマリウムコバルト(1-5系)', formula: 'SmCo₅', composition: { Sm: 1, Co: 5 }, score: 650, desc: '耐熱性に優れ、高温環境下でも減磁しにくい強力な永久磁石材料', isOrganic: false },
+  { name: 'サマリウムコバルト(2-17系)', formula: 'Sm₂Co₁₇', composition: { Sm: 2, Co: 17 }, score: 700, desc: '高温耐久性と強い磁力を兼ね備えた高級磁石化合物', isOrganic: false },
+  { name: '水素貯蔵合金(ラベス相)', formula: 'LaNi₅', composition: { La: 1, Ni: 5 }, score: 600, desc: '大量の水素ガスを吸蔵・放出でき、ニッケル水素電池の負極に使われる', isOrganic: false },
+  { name: '鉄チタン(水素貯蔵化合物)', formula: 'FeTi', composition: { Fe: 1, Ti: 1 }, score: 450, desc: '安価で室温付近で水素を吸蔵・放出できる水素貯蔵合金', isOrganic: false },
+  { name: 'マグネシウムニッケル', formula: 'Mg₂Ni', composition: { Mg: 2, Ni: 1 }, score: 480, desc: '軽量で高い水素吸蔵容量を持つ水素貯蔵用金属間化合物', isOrganic: false },
+  { name: 'セメンタイト(炭化鉄)', formula: 'Fe₃C', composition: { Fe: 3, C: 1 }, score: 480, desc: '鋼の内部組織に存在し、硬度や強度を向上させる金属間化合物', isOrganic: false },
+  { name: '青銅ガンメタル相(銅スズ)', formula: 'Cu₃Sn', composition: { Cu: 3, Sn: 1 }, score: 420, desc: 'はんだ付け時の接合界面などで形成される強固な金属間化合物結晶', isOrganic: false },
+  { name: '銅亜鉛γ相', formula: 'Cu₅Zn₈', composition: { Cu: 5, Zn: 8 }, score: 550, desc: '真鍮（黄銅）の組成において硬く脆い性質を示すγ相金属間化合物', isOrganic: false },
+  { name: '金アルミニウム(紫金)', formula: 'AuAl₂', composition: { Au: 1, Al: 2 }, score: 600, desc: '美しい紫色を呈する金属間化合物で、ジュエリーや装飾用合金に利用される', isOrganic: false },
+  { name: '金インジウム', formula: 'AuIn₂', composition: { Au: 1, In: 2 }, score: 580, desc: '青みを帯びた銀色を示す特異な光学特性を持った金属間化合物', isOrganic: false },
+  { name: 'ビスマスチタン(熱電材料)', formula: 'Bi₂Te₃', composition: { Bi: 2, Te: 3 }, score: 620, desc: 'ペルチェ素子などの冷却・発電用熱電変換材料として広く用いられる', isOrganic: false },
+  { name: 'コバルトシリサイド', formula: 'CoSi₂', composition: { Co: 1, Si: 2 }, score: 520, desc: '半導体微細プロセスで配線抵抗を下げるコンタクト層に用いられる', isOrganic: false },
+  { name: 'チタンシリサイド', formula: 'TiSi₂', composition: { Ti: 1, Si: 2 }, score: 500, desc: 'LSIやMOSFETのゲート電極・配線用の低抵抗シリサイド材料', isOrganic: false },
+  { name: 'モリブデンシリサイド', formula: 'MoSi₂', composition: { Mo: 1, Si: 2 }, score: 550, desc: '高温で自熱保護膜（SiO₂）を形成し、超高温電気炉の発熱体に使われる', isOrganic: false },
   // --- Noble Gas Specials ---
   { name: '希ガスボム(He)', formula: 'He BOMB', composition: { He: 3 }, isNobleGasSpecial: true, score: 600, desc: '起点の縦列・横行すべての元素を一括全消去！', isOrganic: false },
   { name: '希ガスボム(Ne)', formula: 'Ne BOMB', composition: { Ne: 3 }, isNobleGasSpecial: true, score: 700, desc: '起点の縦列・横行すべての元素を一括全消去！', isOrganic: false }
